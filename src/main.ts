@@ -13,12 +13,23 @@ assetMan.defineAssets([
   {name: 'stones', path: 'assets/stones.png', type: 'image'},
   {name: 'floor', path: 'assets/floor.png', type: 'image'},
   {name: 'death', path: 'assets/skull_front.png', type: 'image'},
-  {name: 'music', path: 'assets/WorldOfDeath.ogg', type: 'audio'},
+  {name: 'music', path: 'assets/WorldOfDeath.ogg', type: 'music'},
+  {name: 'loop2', path: 'assets/loop2.ogg', type: 'music'},
   {name: 'levelcomplete', path: 'assets/levelcomplete.ogg', type: 'audio'},
   {name: 'playerdeath', path: 'assets/death.ogg', type: 'audio'},
   {name: 'exitfloor', path: 'assets/exit.png', type: 'image'},
+  {name: 'pillar', path: 'assets/pillar.png', type: 'image'},
   {name: 'bloodpillar', path: 'assets/bloodpillar.png', type: 'image'},
   {name: 'neongrass', path: 'assets/neongrass.png', type: 'image'},
+  {name: 'bloodfloor', path: 'assets/bloodfloor.png', type: 'image'},
+
+  {name: 'chant0', path: 'assets/chant0.ogg', type: 'audio'},
+  {name: 'chant1', path: 'assets/chant1.ogg', type: 'audio'},
+  {name: 'chant2', path: 'assets/chant2.ogg', type: 'audio'},
+
+
+
+  
 ]);
 
 assetMan.onReady(function() {

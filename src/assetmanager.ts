@@ -82,7 +82,7 @@ export class AssetManager {
 
   getAudio(name: string) {
     const asset = this.assets.get(name);
-    if (asset.type !== 'audio') {
+    if (asset.type !== 'audio' && asset.type !== 'music') {
       throw new Error('expected audio');
     }
     return asset.data as HTMLAudioElement;

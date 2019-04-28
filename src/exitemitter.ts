@@ -18,11 +18,12 @@ void main() {
 `;
 
 const emitterFS = `
-uniform highp vec4 fog_color;
+uniform highp vec4  fog_color;
+uniform highp float fog_density;
 
 void main() {
   highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * 0.03) * 2.0;
+  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
   fog              = clamp(fog, 0.0, 1.0);
 
   highp vec2 texcoord   = gl_PointCoord;
@@ -93,7 +94,7 @@ export default class ExitEmitter {
     }
   }
 
-  render(view: glm.mat4, proj: glm.mat4, fogColor: number[], alpha: number) {
+  render(view: glm.mat4, proj: glm.mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
     gl.useProgram(this.program);
 
@@ -113,6 +114,7 @@ export default class ExitEmitter {
     const projUni = gl.getUniformLocation(this.program, 'projection');
     const interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
     const fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
+    const fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
 
     gl.uniformMatrix4fv(viewUni, false, view);
     gl.uniformMatrix4fv(projUni, false, proj);
@@ -123,6 +125,7 @@ export default class ExitEmitter {
       fogColor[2],
       fogColor[3]
     );
+    gl.uniform1f(fogDensityUni, fogDensity);
 
     gl.drawArrays(gl.POINTS, 0, this.positions.length / 3);
   }

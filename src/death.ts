@@ -25,10 +25,11 @@ const deathFS = `
 uniform sampler2D death_texture;
 
 uniform highp vec4  fog_color;
+uniform highp float fog_density;
 
 void main() {
   highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * 0.03) * 2.0;
+  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
   fog              = clamp(fog, 0.0, 1.0);
 
   highp vec2 texcoord   = gl_PointCoord;
@@ -44,6 +45,7 @@ export class Death {
   public worldPos: glm.vec3;
   private velocity: glm.vec3;
   private awake: boolean = false;
+  private wakeCallback;
 
   constructor() {
     this.worldPos = glm.vec3.create();
@@ -76,7 +78,7 @@ export class Death {
       glm.vec3.scale(ray, ray, 16);
       const amt = glm.vec3.clone(ray);
       glm.vec3.copy(ray, this.worldPos);
-      for (let i = 0; i < 6; ++i) {
+      for (let i = 0; i < 12; ++i) {
         const rmx = toMapX(ray[0]);
         const rmy = toMapY(ray[2]);
         const pmx = toMapX(player.getWorldX());
@@ -112,6 +114,13 @@ export class Death {
 
   wake() {
     this.awake = true;
+    if (this.wakeCallback) {
+      this.wakeCallback();
+    }
+  }
+
+  onWake(f) {
+    this.wakeCallback = f;
   }
 }
 
@@ -131,7 +140,7 @@ export class DeathRenderer {
     this.texture = t;
   }
 
-  render(death: Death, view: glm.mat4, proj: glm.mat4, fogColor: number[], alpha: number) {
+  render(death: Death, view: glm.mat4, proj: glm.mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
     gl.useProgram(this.program);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
@@ -152,6 +161,7 @@ export class DeathRenderer {
     const projUni = gl.getUniformLocation(this.program, 'projection');
     const interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
     const fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
+    const fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
     const spriteScaleUni = gl.getUniformLocation(this.program, 'sprite_scale');
 
     gl.enableVertexAttribArray(positionAttrib);
@@ -168,6 +178,7 @@ export class DeathRenderer {
       fogColor[2],
       fogColor[3]
     );
+    gl.uniform1f(fogDensityUni, fogDensity);
     // don't ask
     gl.uniform1f(spriteScaleUni, 14096);
     

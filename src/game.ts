@@ -39,9 +39,11 @@ void main() {
 interface LevelObject {
   text: string;
   enableFog: boolean;
+  fogDensity?: number;
   fogColor: number[];
   floor: string;
   wall: string;
+  music?: string;
 }
 
 enum Direction {
@@ -361,12 +363,14 @@ class Level {
   public tilemap: Tilemap;
   public enableFog: boolean;
   public fogColor: number[];
+  public fogDensity: number;
 
   public geometry: LevelGeometry;
   public geometryBuffers: LevelGeometryBuffers;
 
   public floor: string;
   public wall: string;
+  public music?: string;
 
   constructor(obj: LevelObject) {
     this.tilemap = loadTilemap(obj.text);
@@ -377,11 +381,18 @@ class Level {
       throw new Error('fogColor must contain 4 components');
     }
 
+    if (obj.fogDensity === undefined) {
+      this.fogDensity = 0.03;
+    } else {
+      this.fogDensity = obj.fogDensity;
+    }
+
     this.fogColor = obj.fogColor;
     this.enableFog = obj.enableFog;
 
     this.floor = obj.floor;
     this.wall = obj.wall;
+    this.music = obj.music;
   }
 }
 
@@ -411,10 +422,11 @@ varying highp vec2  f_texcoord;
 
 uniform sampler2D   wall_texture;
 uniform highp vec4  fog_color;
+uniform highp float fog_density;
 
 void main() {
   highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * 0.03) * 2.0;
+  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
   fog              = clamp(fog, 0.0, 1.0);
 
   highp vec4 base_color = texture2D(wall_texture, f_texcoord);
@@ -445,6 +457,23 @@ class GLTextureCache {
       const texture = loadTexture(this.gl, this.am.getImage(name));
       this.textures.set(name, texture);
       return texture;
+    }
+  }
+}
+
+class ChantPlayer {
+  private am: AssetManager;
+
+  constructor(am: AssetManager) {
+    this.am = am;  
+  }
+
+  playChant() {
+    const i = Math.floor(Math.random() * 3);
+    const a = this.am.getAudio(`chant${i}`);
+    try {
+      a.play();
+    } catch {
     }
   }
 }
@@ -509,6 +538,7 @@ export default class Game {
   private paused = false;
 
   private textureCache: GLTextureCache;
+  private chantPlayer: ChantPlayer;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -547,7 +577,8 @@ export default class Game {
     this.deathRenderer.setTexture(this.textureCache.getTexture('death'));
 
     this.music = am.getAudio('music');
-    this.music.loop = true;
+
+    this.chantPlayer = new ChantPlayer(this.assetMan);
 
     this.exitEmitter = new ExitEmitter(gl);
 
@@ -695,6 +726,8 @@ export default class Game {
       this.level.fogColor[2],
       this.level.fogColor[3]
     );
+    gl.uniform1f(gl.getUniformLocation(this.levelProg, 'fog_density'), this.level.fogDensity);
+    
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallPosBuffer);
     const positionAttrib = gl.getAttribLocation(this.levelProg, 'position');
@@ -737,11 +770,11 @@ export default class Game {
     gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.exitFloorVertices.length / 3);
 
     for (let death of this.enemies) {
-      this.deathRenderer.render(death, this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
+      this.deathRenderer.render(death, this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
     }
 
     //
-    this.exitEmitter.render(this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
+    this.exitEmitter.render(this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -821,7 +854,7 @@ export default class Game {
 
   onCanvasMouseMove(e: MouseEvent) {
     if (this.havePointerLock) {
-      this.yawQueue += e.movementX / 100;
+      this.yawQueue += e.movementX / 200;
     }
   }
 
@@ -834,7 +867,7 @@ export default class Game {
     this.canvas.height = this.canvas.clientHeight;
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     this.projMatrix = glm.mat4.perspective(
-      glm.mat4.create(), Math.PI / 2, this.canvas.width / this.canvas.height, 1, 1000
+      glm.mat4.create(), Math.PI / 2, this.canvas.width / this.canvas.height, 0.1, 1000
     );
     this.orthoProj = glm.mat4.ortho(
       glm.mat4.create(),
@@ -918,6 +951,9 @@ export default class Game {
             x * TILE_SIZE,
             y * TILE_SIZE
           );
+          death.onWake(() => {
+            this.chantPlayer.playChant();
+          });
           this.enemies.push(death);
         }
       }
@@ -949,6 +985,22 @@ export default class Game {
     gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.exitFloorVertices, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.exitTexCoordBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.exitFloorTexCoords, gl.STATIC_DRAW);
+
+    if (this.level.music) {
+      this.stopMusic();
+      this.music = this.assetMan.getAudio(this.level.music);
+      try {
+        this.music.play();
+      } catch {
+      }
+    }
+  }
+
+  stopMusic() {
+    if (!this.music.paused) {
+      this.music.pause();
+      this.music.currentTime = 0;
+    }
   }
 
   nextLevel() {
@@ -978,6 +1030,8 @@ export default class Game {
   }
 
   win() {
+    this.stopMusic();
+
     document.exitPointerLock();
     document.exitFullscreen();
 
