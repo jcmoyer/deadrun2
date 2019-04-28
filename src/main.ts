@@ -10,12 +10,14 @@ const assetMan = new AssetManager();
 
 assetMan.defineAssets([
   {name: 'wall', path: 'assets/wall.png', type: 'image'},
+  {name: 'stones', path: 'assets/stones.png', type: 'image'},
   {name: 'floor', path: 'assets/floor.png', type: 'image'},
   {name: 'death', path: 'assets/skull_front.png', type: 'image'},
   {name: 'music', path: 'assets/WorldOfDeath.ogg', type: 'audio'},
   {name: 'levelcomplete', path: 'assets/levelcomplete.ogg', type: 'audio'},
   {name: 'playerdeath', path: 'assets/death.ogg', type: 'audio'},
   {name: 'exitfloor', path: 'assets/exit.png', type: 'image'},
+  {name: 'bloodpillar', path: 'assets/bloodpillar.png', type: 'image'},
 ]);
 
 assetMan.onReady(function() {
