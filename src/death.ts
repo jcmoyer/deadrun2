@@ -1,6 +1,8 @@
 import * as glm from 'gl-matrix';
 import * as glutil from './glutil';
 import {Player} from './player';
+import { Tilemap } from './tilemap';
+import { toMapX, toMapY } from './level';
 
 const deathVS = `
 attribute vec4 position;
@@ -41,6 +43,7 @@ export class Death {
   public prevWorldPos: glm.vec3;
   public worldPos: glm.vec3;
   private velocity: glm.vec3;
+  private awake: boolean = false;
 
   constructor() {
     this.worldPos = glm.vec3.create();
@@ -52,15 +55,44 @@ export class Death {
     glm.vec3.copy(this.prevWorldPos, this.worldPos);
   }
 
-  update(player: Player) {
+  update(player: Player, tilemap: Tilemap) {
     this.beginUpdate();
-    const dx = player.getWorldX();
-    const dy = player.getWorldZ();
-    glm.vec3.set(this.velocity, dx - this.worldPos[0], 0, dy - this.worldPos[2]);
-    glm.vec3.normalize(this.velocity, this.velocity);
-    glm.vec3.scale(this.velocity, this.velocity, 0.2);
-    glm.vec3.add(this.worldPos, this.worldPos, this.velocity);
 
+    const px = player.getWorldX();
+    const py = player.getWorldZ();
+    const dx = px - this.worldPos[0];
+    const dy = py - this.worldPos[2];
+    const dir = glm.vec3.create();
+    glm.vec3.set(dir, dx, 0, dy);
+    glm.vec3.normalize(dir, dir);
+    
+    if (this.awake) {
+      glm.vec3.set(this.velocity, px - this.worldPos[0], 0, py - this.worldPos[2]);
+      glm.vec3.normalize(this.velocity, this.velocity);
+      glm.vec3.scale(this.velocity, this.velocity, 0.2);
+      glm.vec3.add(this.worldPos, this.worldPos, this.velocity);
+    } else {
+      const ray = glm.vec3.clone(dir);
+      glm.vec3.scale(ray, ray, 16);
+      const amt = glm.vec3.clone(ray);
+      glm.vec3.copy(ray, this.worldPos);
+      for (let i = 0; i < 6; ++i) {
+        const rmx = toMapX(ray[0]);
+        const rmy = toMapY(ray[2]);
+        const pmx = toMapX(player.getWorldX());
+        const pmy = toMapY(player.getWorldZ());
+
+        if (tilemap.isSolid(rmx, rmy)) {
+          // hit a wall
+          break;
+        } else if (rmx === pmx && rmy === pmy) {
+          // hit player tile
+          this.wake();
+        }
+
+        glm.vec3.add(ray, ray, amt);
+      }
+    }
     this.worldPos[1] = 16 + Math.sin(Date.now() / 1000) * 2;
   }
 
@@ -76,6 +108,10 @@ export class Death {
 
   getWorldZ() {
     return this.worldPos[2];
+  }
+
+  wake() {
+    this.awake = true;
   }
 }
 

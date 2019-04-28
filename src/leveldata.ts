@@ -15,7 +15,7 @@ E______P_D_D
     enableFog: true,
     //fogColor:  [0.1, 0.0, 0.0, 1.0],
     fogColor:  [0.8, 0.8, 0.8, 1.0],
-    floor: 'stones',
+    floor: 'neongrass',
     wall: 'stones',
     text:
 `

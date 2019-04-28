@@ -6,6 +6,7 @@ import { Death, DeathRenderer } from './death';
 import { Player } from './player';
 import { Tilemap, Tile, SOLID, FLOOR, DEATH, SPAWN, EXIT } from './tilemap';
 import ExitEmitter from './exitemitter';
+import { TILE_SIZE, HALF_TILE, toMapX, toMapY } from './level';
 
 import leveldata from "./leveldata";
 
@@ -66,9 +67,6 @@ function isDeath(s: string) {
 function isExit(s: string) {
   return s === 'E';
 }
-
-const TILE_SIZE = 32;
-const HALF_TILE = TILE_SIZE / 2;
 
 function loadTilemap(data: string) {
   data = data.trim();
@@ -429,14 +427,6 @@ void main() {
 }
 `;
 
-function toMapX(worldX) {
-  return Math.floor(worldX / TILE_SIZE + 0.5);
-}
-
-function toMapY(worldZ) {
-  return Math.floor(worldZ / TILE_SIZE + 0.5);
-}
-
 class GLTextureCache {
   private gl: WebGLRenderingContext;
   private am: AssetManager;
@@ -629,20 +619,21 @@ export default class Game {
 
     this.player.setWorldPos(new_px, new_pz);
 
+    // TODO: clean this up by converting player worldpos to vec3...
+    const playerWorld = glm.vec3.create();
+    glm.vec3.set(playerWorld, this.player.pos[0], 16, this.player.pos[1]);
+
     const playerMapX = toMapX(this.player.getWorldX());
     const playerMapY = toMapY(this.player.getWorldZ());
 
     const exitTile = this.level.tilemap.getExitTile();
 
     for (let death of this.enemies) {
-      const deathMapX = toMapX(death.getWorldX());
-      const deathMapY = toMapY(death.getWorldZ());
-      if (playerMapX == deathMapX && playerMapY == deathMapY) {
+      if (glm.vec3.dist(death.worldPos, playerWorld) <= 16) {
         this.killPlayer();
         return;
       }
     }
-
 
     if (playerMapX == exitTile.x && playerMapY == exitTile.y) {
       this.nextLevel();
@@ -650,12 +641,9 @@ export default class Game {
     }
 
     for (let death of this.enemies) {
-      death.update(this.player);
+      death.update(this.player, this.level.tilemap);
     }
 
-    // TODO: clean this up by converting player worldpos to vec3...
-    const playerWorld = glm.vec3.create();
-    glm.vec3.set(playerWorld, this.player.pos[0], 16, this.player.pos[1]);
     this.enemies.sort((a, b) => {
       return glm.vec3.dist(playerWorld, b.worldPos) - glm.vec3.dist(playerWorld, a.worldPos);
     });
@@ -804,6 +792,10 @@ export default class Game {
 
   onKeyDown(e: KeyboardEvent) {
     this.keyboard.set(e.key, true);
+
+    if (e.key === 'f') {
+      this.canvas.requestFullscreen();
+    }
   }
 
   onKeyUp(e: KeyboardEvent) {
@@ -813,7 +805,6 @@ export default class Game {
   onCanvasClick() {
     if (!this.havePointerLock) {
       this.canvas.requestPointerLock();
-      this.canvas.requestFullscreen();
 
       if (this.music.paused) {
         try {

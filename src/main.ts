@@ -18,6 +18,7 @@ assetMan.defineAssets([
   {name: 'playerdeath', path: 'assets/death.ogg', type: 'audio'},
   {name: 'exitfloor', path: 'assets/exit.png', type: 'image'},
   {name: 'bloodpillar', path: 'assets/bloodpillar.png', type: 'image'},
+  {name: 'neongrass', path: 'assets/neongrass.png', type: 'image'},
 ]);
 
 assetMan.onReady(function() {
