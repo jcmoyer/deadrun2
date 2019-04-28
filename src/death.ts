@@ -38,26 +38,31 @@ void main() {
 `;
 
 export class Death {
-  public worldPos: glm.vec2;
-  public v: glm.vec2;
+  public prevWorldPos: glm.vec3;
+  public worldPos: glm.vec3;
+  private velocity: glm.vec3;
 
   constructor() {
-    this.worldPos = glm.vec2.create();
-    this.v = glm.vec2.create();
+    this.worldPos = glm.vec3.create();
+    this.velocity = glm.vec3.create();
+    this.prevWorldPos = glm.vec3.create();
   }
 
   update(player: Player) {
+    glm.vec3.copy(this.prevWorldPos, this.worldPos);
     const dx = player.getWorldX();
     const dy = player.getWorldZ();
-    glm.vec2.set(this.v, dx - this.worldPos[0], dy - this.worldPos[1]);
-    glm.vec2.normalize(this.v, this.v);
-    glm.vec2.scale(this.v, this.v, 0.2);
-    glm.vec2.add(this.worldPos, this.worldPos, this.v);
+    glm.vec3.set(this.velocity, dx - this.worldPos[0], 0, dy - this.worldPos[2]);
+    glm.vec3.normalize(this.velocity, this.velocity);
+    glm.vec3.scale(this.velocity, this.velocity, 0.2);
+    glm.vec3.add(this.worldPos, this.worldPos, this.velocity);
+
+    this.worldPos[1] = 16 + Math.sin(Date.now() / 1000) * 2;
   }
 
   setWorldPos(x, z) {
     this.worldPos[0] = x;
-    this.worldPos[1] = z;
+    this.worldPos[2] = z;
   }
 
   getWorldX() {
@@ -65,7 +70,7 @@ export class Death {
   }
 
   getWorldZ() {
-    return this.worldPos[1];
+    return this.worldPos[2];
   }
 }
 
@@ -92,9 +97,9 @@ export class DeathRenderer {
 
     const pointData = new Float32Array([
       // TODO previous position (also change pointers below)
-      death.worldPos[0], 16, death.worldPos[1],
+      death.prevWorldPos[0], death.prevWorldPos[1], death.prevWorldPos[2],
       // latest position
-      death.worldPos[0], 16, death.worldPos[1]
+      death.worldPos[0], death.worldPos[1], death.worldPos[2]
     ]);
 
     gl.bufferData(gl.ARRAY_BUFFER, pointData, gl.STREAM_DRAW);
@@ -109,7 +114,7 @@ export class DeathRenderer {
     const spriteScaleUni = gl.getUniformLocation(this.program, 'sprite_scale');
 
     gl.enableVertexAttribArray(positionAttrib);
-    gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 12);
     gl.enableVertexAttribArray(prevPositionAttrib);
     gl.vertexAttribPointer(prevPositionAttrib, 3, gl.FLOAT, false, 0, 0);
 
