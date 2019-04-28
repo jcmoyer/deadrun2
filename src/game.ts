@@ -232,8 +232,6 @@ function condenseGeometry(geo: LevelGeometry) {
   let shadeOffset = 0;
   let floorVOffset = 0;
 
-  let wallID = 0;
-
   buffers.exitFloorVertices.set([
     geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
     geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
@@ -354,7 +352,6 @@ function condenseGeometry(geo: LevelGeometry) {
     vertexOffset += 6 * 3;
     shadeOffset += 6;
     texCoordOffset += 6 * 2;
-    ++wallID;
   }
 
   return buffers;
@@ -430,34 +427,6 @@ function toMapX(worldX) {
 
 function toMapY(worldZ) {
   return Math.floor(worldZ / TILE_SIZE + 0.5);
-}
-
-class Overlay {
-  canvas: HTMLCanvasElement;
-  context: CanvasRenderingContext2D;
-
-  constructor(canvas: HTMLCanvasElement) {
-    this.canvas = canvas;
-    this.context = this.canvas.getContext('2d');
-  }
-
-  setText(t) {
-    this.context.fillStyle = 'white';
-    this.context.textAlign = 'center';
-    this.context.textBaseline = 'middle';
-    this.context.fillText(t, this.canvas.width / 2, this.canvas.height / 2);
-
-
-  }
-
-  clear() {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  }
-
-  performLayout() {
-    this.canvas.width = this.canvas.clientWidth;
-    this.canvas.height = this.canvas.clientHeight;
-  }
 }
 
 export default class Game {
