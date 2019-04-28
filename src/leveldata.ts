@@ -3,6 +3,8 @@ export default [
     enableFog: true,
     //fogColor:  [0.1, 0.0, 0.0, 1.0],
     fogColor:  [0.0, 0.0, 0.0, 1.0],
+    floor: 'stones',
+    wall: 'stones',
     text:
 `
 E______P_D_D
@@ -13,6 +15,8 @@ E______P_D_D
     enableFog: true,
     //fogColor:  [0.1, 0.0, 0.0, 1.0],
     fogColor:  [0.8, 0.8, 0.8, 1.0],
+    floor: 'stones',
+    wall: 'stones',
     text:
 `
 ##############
@@ -31,6 +35,8 @@ E______P_D_D
     enableFog: true,
     //fogColor:  [0.1, 0.0, 0.0, 1.0],
     fogColor:  [0.8, 0.8, 0.8, 1.0],
+    floor: 'stones',
+    wall: 'stones',
     text:
 `
 #_________#
@@ -44,6 +50,24 @@ ___#_D_#___
 ___________
 ___#___#___
 #_________#
+`
+  },
+
+  {
+    enableFog: true,
+    //fogColor:  [0.1, 0.0, 0.0, 1.0],
+    fogColor:  [0.1, 0.0, 0.0, 1.0],
+    floor: 'stones',
+    wall: 'bloodpillar',
+    text:
+`
+___________
+#_________#
+_#_#_#_#_#_
+P_______E##
+_#_#_#_#_#_
+#_________#
+___________
 `
   }
 

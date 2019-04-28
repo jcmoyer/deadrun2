@@ -39,6 +39,8 @@ interface LevelObject {
   text: string;
   enableFog: boolean;
   fogColor: number[];
+  floor: string;
+  wall: string;
 }
 
 enum Direction {
@@ -365,6 +367,9 @@ class Level {
   public geometry: LevelGeometry;
   public geometryBuffers: LevelGeometryBuffers;
 
+  public floor: string;
+  public wall: string;
+
   constructor(obj: LevelObject) {
     this.tilemap = loadTilemap(obj.text);
     this.geometry = generateSparseGeometry(this.tilemap);
@@ -376,6 +381,9 @@ class Level {
 
     this.fogColor = obj.fogColor;
     this.enableFog = obj.enableFog;
+
+    this.floor = obj.floor;
+    this.wall = obj.wall;
   }
 }
 
@@ -427,6 +435,28 @@ function toMapX(worldX) {
 
 function toMapY(worldZ) {
   return Math.floor(worldZ / TILE_SIZE + 0.5);
+}
+
+class GLTextureCache {
+  private gl: WebGLRenderingContext;
+  private am: AssetManager;
+  private textures: Map<string, WebGLTexture>;
+
+  constructor(gl: WebGLRenderingContext, am: AssetManager) {
+    this.gl = gl;
+    this.am = am;
+    this.textures = new Map();
+  }
+
+  getTexture(name: string) {
+    if (this.textures.has(name)) {
+      return this.textures.get(name);
+    } else {
+      const texture = loadTexture(this.gl, this.am.getImage(name));
+      this.textures.set(name, texture);
+      return texture;
+    }
+  }
 }
 
 export default class Game {
@@ -488,6 +518,8 @@ export default class Game {
   private fadeDirection = 'in';
   private paused = false;
 
+  private textureCache: GLTextureCache;
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -498,6 +530,8 @@ export default class Game {
     this.camera.setEye(0, 16, 0);
 
     const gl = this.gl;
+
+    this.textureCache = new GLTextureCache(gl, am);
 
     gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
@@ -517,12 +551,10 @@ export default class Game {
     // TODO: error handling
     this.levelProg = buildProgram(this.gl, levelVS, levelFS);
 
-    this.wallTexture = loadTexture(gl, am.getImage('wall'));
-    this.floorTexture = loadTexture(gl, am.getImage('floor'));
-    this.exitTexture = loadTexture(gl, am.getImage('exitfloor'));
+    this.exitTexture = this.textureCache.getTexture('exitfloor');
 
     this.deathRenderer = new DeathRenderer(gl);
-    this.deathRenderer.setTexture(loadTexture(gl, am.getImage('death')));
+    this.deathRenderer.setTexture(this.textureCache.getTexture('death'));
 
     this.music = am.getAudio('music');
     this.music.loop = true;
@@ -872,6 +904,9 @@ export default class Game {
     const gl = this.gl;
 
     this.level = level;
+
+    this.wallTexture = this.textureCache.getTexture(level.wall);
+    this.floorTexture = this.textureCache.getTexture(level.floor);
 
     const spawn = this.level.tilemap.getSpawnTile();
     this.player.setWorldPos(
