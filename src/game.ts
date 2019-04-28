@@ -8,7 +8,32 @@ import {Tilemap, Tile, SOLID, FLOOR, DEATH, SPAWN, EXIT} from './tilemap';
 import ExitEmitter from './exitemitter';
 
 import leveldata from "./leveldata";
-console.log(leveldata);
+
+const orthoQuadVS = `
+attribute vec4 position;
+attribute vec2 texcoord;
+
+uniform mat4 projection;
+
+varying highp vec2 f_texcoord;
+
+void main() {
+  gl_Position = projection * position;
+  f_texcoord = texcoord;
+}
+`;
+
+const orthoQuadFS = `
+varying highp vec2 f_texcoord;
+uniform sampler2D screentexture;
+
+uniform highp vec4  color;
+uniform highp float color_mix;
+
+void main() {
+  gl_FragColor = mix(texture2D(screentexture, f_texcoord), color, color_mix);
+}
+`;
 
 interface LevelObject {
   text: string;
@@ -481,6 +506,16 @@ export default class Game {
   private gameFinished = false;
   private gameFinishedCallback;
 
+  private fb: WebGLFramebuffer;
+  private fbTexture: WebGLTexture;
+  private fbDepthBuffer: WebGLRenderbuffer;
+
+  private orthoProj: glm.mat4;
+  private orthoProgram: WebGLProgram;
+  private orthoBuffer: WebGLBuffer;
+
+  private fadeTimer: number = 2000;
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -522,8 +557,25 @@ export default class Game {
 
     this.exitEmitter = new ExitEmitter(gl);
 
+    this.fb = gl.createFramebuffer();
+    this.createFBTexture();
+
+    this.orthoProgram = buildProgram(gl, orthoQuadVS, orthoQuadFS);
+
+    this.orthoBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
+    const orthoVerts = [
+      -1,  1, 0,       0, 1,
+      -1, -1, 0,       0, 0,
+      1, -1, 0,        1, 0,
+      
+      1, -1, 0,        1, 0,
+      1, 1, 0,         1, 1,
+      -1, 1, 0,        0, 1,
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(orthoVerts), gl.STATIC_DRAW);
+
     this.setLevel(new Level(leveldata[this.levelID]));
-    console.log(this.level);
   }
 
   update(dt) {
@@ -604,11 +656,15 @@ export default class Game {
     while (this.pendingUpdateTime >= UPDATE_FRAME_MS) {
       this.update(UPDATE_FRAME_MS);
       this.pendingUpdateTime -= UPDATE_FRAME_MS;
+      this.fadeTimer -= UPDATE_FRAME_MS;
     }
 
     const alpha = this.pendingUpdateTime / UPDATE_FRAME_MS;
 
     this.lastUpdate = now;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+    
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -666,6 +722,30 @@ export default class Game {
 
     this.deathRenderer.render(this.death, this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
     this.exitEmitter.render(this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    gl.useProgram(this.orthoProgram);
+    const orthoProjUni = gl.getUniformLocation(this.orthoProgram, 'projection');
+    const orthoColorUni = gl.getUniformLocation(this.orthoProgram, 'color');
+    const orthoColorMixUni = gl.getUniformLocation(this.orthoProgram, 'color_mix');
+    gl.uniformMatrix4fv(orthoProjUni, false, this.orthoProj);
+    gl.uniform4f(orthoColorUni, 0, 0, 0, 1);
+    gl.uniform1f(orthoColorMixUni, this.getFadeAmount());
+    
+    const orthoPosAttr = gl.getAttribLocation(this.orthoProgram, 'position');
+    const orthoTexCoordAttr = gl.getAttribLocation(this.orthoProgram, 'texcoord');
+    
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
+    gl.enableVertexAttribArray(orthoPosAttr);
+    gl.vertexAttribPointer(orthoPosAttr, 3, gl.FLOAT, false, 20, 0);
+    gl.enableVertexAttribArray(orthoTexCoordAttr);
+    gl.vertexAttribPointer(orthoTexCoordAttr, 2, gl.FLOAT, false, 20, 12);
+
+    gl.bindTexture(gl.TEXTURE_2D, this.fbTexture);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     if (!this.gameFinished) {
       window.requestAnimationFrame(this.renderClosure);
@@ -733,11 +813,41 @@ export default class Game {
     this.projMatrix = glm.mat4.perspective(
       glm.mat4.create(), Math.PI / 2, this.canvas.width / this.canvas.height, 1, 1000
     );
+    this.orthoProj = glm.mat4.ortho(
+      glm.mat4.create(),
+      -1, 1, -1, 1, 0, 1
+    );
+    this.createFBTexture();
+  }
+
+  createFBTexture() {
+    const gl = this.gl;
+    gl.deleteTexture(this.fbTexture);
+    this.fbTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.fbTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.canvas.width, this.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    gl.deleteRenderbuffer(this.fbDepthBuffer);
+    this.fbDepthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, this.fbDepthBuffer);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.canvas.width, this.canvas.height);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.fbTexture, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.fbDepthBuffer);
   }
 
   killPlayer() {
     this.assetMan.tryPlayAudio('playerdeath');
     this.setLevel(new Level(leveldata[this.levelID]));
+  }
+
+  getFadeAmount() {
+    return Math.max(this.fadeTimer / 2000, 0);
   }
 
   setLevel(level: Level) {
@@ -806,7 +916,7 @@ export default class Game {
   win() {
     document.exitPointerLock();
     document.exitFullscreen();
-    
+
     this.gameFinished = true;
     this.gameFinishedCallback();
   }
