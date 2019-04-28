@@ -48,8 +48,12 @@ export class Death {
     this.prevWorldPos = glm.vec3.create();
   }
 
-  update(player: Player) {
+  beginUpdate() {
     glm.vec3.copy(this.prevWorldPos, this.worldPos);
+  }
+
+  update(player: Player) {
+    this.beginUpdate();
     const dx = player.getWorldX();
     const dy = player.getWorldZ();
     glm.vec3.set(this.velocity, dx - this.worldPos[0], 0, dy - this.worldPos[2]);
@@ -62,6 +66,7 @@ export class Death {
 
   setWorldPos(x, z) {
     this.worldPos[0] = x;
+    this.worldPos[1] = 16;
     this.worldPos[2] = z;
   }
 

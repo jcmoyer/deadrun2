@@ -7,6 +7,7 @@ export class Player {
   public prevEye: glm.vec3;
   public prevLook: glm.vec3;
   public yaw = 0;
+  public dead = false;
 
   constructor() {
     this.pos = glm.vec2.create();

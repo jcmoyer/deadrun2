@@ -2,9 +2,9 @@ import * as glm from "gl-matrix";
 import { Camera } from "./camera";
 import { buildProgram, loadTexture } from './glutil';
 import { AssetManager } from './assetmanager';
-import {Death, DeathRenderer} from './death';
-import {Player} from './player';
-import {Tilemap, Tile, SOLID, FLOOR, DEATH, SPAWN, EXIT} from './tilemap';
+import { Death, DeathRenderer } from './death';
+import { Player } from './player';
+import { Tilemap, Tile, SOLID, FLOOR, DEATH, SPAWN, EXIT } from './tilemap';
 import ExitEmitter from './exitemitter';
 
 import leveldata from "./leveldata";
@@ -140,7 +140,7 @@ function generateSparseGeometry(tilemap: Tilemap) {
   for (let y = 0; y < tilemap.getHeight(); ++y) {
     for (let x = 0; x < tilemap.getWidth(); ++x) {
       const t = tilemap.getTile(x, y);
-      
+
       // generate border walls
       if (!tilemap.inBounds(x - 1, y) || tilemap.getFlag(x - 1, y) & SOLID) {
         const w = new Wall();
@@ -193,7 +193,7 @@ function generateSparseGeometry(tilemap: Tilemap) {
         f.originZ = y * TILE_SIZE;
         geo.exitFloor = f;
       }
-    } 
+    }
   }
 
   geo.walls = walls;
@@ -238,7 +238,7 @@ function condenseGeometry(geo: LevelGeometry) {
     geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
     geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
     geo.exitFloor.originX + HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
-    
+
     geo.exitFloor.originX + HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
     geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
     geo.exitFloor.originX + HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
@@ -258,7 +258,7 @@ function condenseGeometry(geo: LevelGeometry) {
       floor.originX - HALF_TILE, floor.originY, floor.originZ - HALF_TILE,
       floor.originX - HALF_TILE, floor.originY, floor.originZ + HALF_TILE,
       floor.originX + HALF_TILE, floor.originY, floor.originZ - HALF_TILE,
-      
+
       floor.originX + HALF_TILE, floor.originY, floor.originZ - HALF_TILE,
       floor.originX - HALF_TILE, floor.originY, floor.originZ + HALF_TILE,
       floor.originX + HALF_TILE, floor.originY, floor.originZ + HALF_TILE,
@@ -293,48 +293,48 @@ function condenseGeometry(geo: LevelGeometry) {
     if (wall.direction == Direction.down) {
       buffers.wallVertices.set([
         wall.originX - HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX - HALF_TILE, wall.originY            , wall.originZ,
+        wall.originX - HALF_TILE, wall.originY, wall.originZ,
         wall.originX + HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
 
         wall.originX + HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX - HALF_TILE, wall.originY            , wall.originZ,
-        wall.originX + HALF_TILE, wall.originY            , wall.originZ,
+        wall.originX - HALF_TILE, wall.originY, wall.originZ,
+        wall.originX + HALF_TILE, wall.originY, wall.originZ,
       ], vertexOffset);
     }
 
     if (wall.direction == Direction.up) {
       buffers.wallVertices.set([
         wall.originX + HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX + HALF_TILE, wall.originY            , wall.originZ,
+        wall.originX + HALF_TILE, wall.originY, wall.originZ,
         wall.originX - HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
 
         wall.originX - HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX + HALF_TILE, wall.originY            , wall.originZ,
-        wall.originX - HALF_TILE, wall.originY            , wall.originZ,
+        wall.originX + HALF_TILE, wall.originY, wall.originZ,
+        wall.originX - HALF_TILE, wall.originY, wall.originZ,
       ], vertexOffset);
     }
 
     if (wall.direction == Direction.left) {
       buffers.wallVertices.set([
         wall.originX, wall.originY + TILE_SIZE, wall.originZ - HALF_TILE,
-        wall.originX, wall.originY            , wall.originZ - HALF_TILE,
+        wall.originX, wall.originY, wall.originZ - HALF_TILE,
         wall.originX, wall.originY + TILE_SIZE, wall.originZ + HALF_TILE,
 
         wall.originX, wall.originY + TILE_SIZE, wall.originZ + HALF_TILE,
-        wall.originX, wall.originY            , wall.originZ - HALF_TILE,
-        wall.originX, wall.originY            , wall.originZ + HALF_TILE,
+        wall.originX, wall.originY, wall.originZ - HALF_TILE,
+        wall.originX, wall.originY, wall.originZ + HALF_TILE,
       ], vertexOffset);
     }
 
     if (wall.direction == Direction.right) {
       buffers.wallVertices.set([
         wall.originX, wall.originY + TILE_SIZE, wall.originZ + HALF_TILE,
-        wall.originX, wall.originY            , wall.originZ + HALF_TILE,
+        wall.originX, wall.originY, wall.originZ + HALF_TILE,
         wall.originX, wall.originY + TILE_SIZE, wall.originZ - HALF_TILE,
 
         wall.originX, wall.originY + TILE_SIZE, wall.originZ - HALF_TILE,
-        wall.originX, wall.originY            , wall.originZ + HALF_TILE,
-        wall.originX, wall.originY            , wall.originZ - HALF_TILE,
+        wall.originX, wall.originY, wall.originZ + HALF_TILE,
+        wall.originX, wall.originY, wall.originZ - HALF_TILE,
       ], vertexOffset);
     }
 
@@ -447,7 +447,7 @@ class Overlay {
     this.context.textBaseline = 'middle';
     this.context.fillText(t, this.canvas.width / 2, this.canvas.height / 2);
 
-    
+
   }
 
   clear() {
@@ -468,7 +468,7 @@ export default class Game {
   private projMatrix: glm.mat4;
   private camera: Camera;
   private player: Player = new Player();
-  private death: Death;
+  private enemies: Death[];
 
   private wallPosBuffer: WebGLBuffer;
   private wallTexCoordBuffer: WebGLBuffer;
@@ -515,6 +515,9 @@ export default class Game {
   private orthoBuffer: WebGLBuffer;
 
   private fadeTimer: number = 2000;
+  private fadeColor = [0, 0, 0, 1];
+  private fadeDirection = 'in';
+  private paused = false;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -524,7 +527,7 @@ export default class Game {
 
     this.camera = new Camera();
     this.camera.setEye(0, 16, 0);
-    
+
     const gl = this.gl;
 
     gl.enable(gl.CULL_FACE);
@@ -565,13 +568,13 @@ export default class Game {
     this.orthoBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
     const orthoVerts = [
-      -1,  1, 0,       0, 1,
-      -1, -1, 0,       0, 0,
-      1, -1, 0,        1, 0,
-      
-      1, -1, 0,        1, 0,
-      1, 1, 0,         1, 1,
-      -1, 1, 0,        0, 1,
+      -1, 1, 0, 0, 1,
+      -1, -1, 0, 0, 0,
+      1, -1, 0, 1, 0,
+
+      1, -1, 0, 1, 0,
+      1, 1, 0, 1, 1,
+      -1, 1, 0, 0, 1,
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(orthoVerts), gl.STATIC_DRAW);
 
@@ -579,11 +582,19 @@ export default class Game {
   }
 
   update(dt) {
+    if (this.paused) {
+      this.yawQueue = 0;
+      this.player.beginUpdate();
+      for (let death of this.enemies) {
+        death.beginUpdate();
+      }
+      return;
+    }
     this.player.beginUpdate();
 
     const old_px = this.player.getWorldX();
     const old_pz = this.player.getWorldZ();
-    
+
     if (this.keyboard.get('w')) {
       this.player.move(1);
     }
@@ -597,46 +608,59 @@ export default class Game {
       this.player.strafe(1);
     }
 
-    const new_px = this.player.getWorldX();
-    const new_pz = this.player.getWorldZ();
+    let new_px = this.player.getWorldX();
+    let new_pz = this.player.getWorldZ();
 
     // step one axis at a time so the player can slide against walls
+    // however this is super jank and will probably break
+    // need to do aabb or something but didn't have time to read up on 3d
+    // collisions so this is a poor adaptation of a 2d method
 
     const tilemap = this.level.tilemap;
 
-    if (!tilemap.isSolid(toMapX(new_px), toMapY(old_pz))) {
-      this.player.setWorldPos(new_px, old_pz);
-
-      if (!tilemap.isSolid(toMapX(new_px), toMapY(new_pz))) {
-        this.player.setWorldPos(new_px, new_pz);
-      }
-    } else if (!tilemap.isSolid(toMapX(old_px), toMapY(new_pz))) {
-      this.player.setWorldPos(old_px, new_pz);
-
-      if (!tilemap.isSolid(toMapX(new_px), toMapY(new_pz))) {
-        this.player.setWorldPos(new_px, new_pz);
-      }
+    if (tilemap.isSolid(toMapX(new_px), toMapY(old_pz))) {
+      new_px = old_px;
     }
+
+    if (tilemap.isSolid(toMapX(new_px), toMapY(new_pz))) {
+      new_pz = old_pz;
+    }
+
+    this.player.setWorldPos(new_px, new_pz);
 
     const playerMapX = toMapX(this.player.getWorldX());
     const playerMapY = toMapY(this.player.getWorldZ());
-    const deathMapX = toMapX(this.death.getWorldX());
-    const deathMapY = toMapY(this.death.getWorldZ());
+
     const exitTile = this.level.tilemap.getExitTile();
 
-    if (playerMapX == deathMapX && playerMapY == deathMapY) {
-      this.killPlayer();
-      return;
+    for (let death of this.enemies) {
+      const deathMapX = toMapX(death.getWorldX());
+      const deathMapY = toMapY(death.getWorldZ());
+      if (playerMapX == deathMapX && playerMapY == deathMapY) {
+        this.killPlayer();
+        return;
+      }
     }
+
 
     if (playerMapX == exitTile.x && playerMapY == exitTile.y) {
       this.nextLevel();
       return;
     }
 
-    this.death.update(this.player);
+    for (let death of this.enemies) {
+      death.update(this.player);
+    }
+
+    // TODO: clean this up by converting player worldpos to vec3...
+    const playerWorld = glm.vec3.create();
+    glm.vec3.set(playerWorld, this.player.pos[0], 16, this.player.pos[1]);
+    this.enemies.sort((a, b) => {
+      return glm.vec3.dist(playerWorld, b.worldPos) - glm.vec3.dist(playerWorld, a.worldPos);
+    });
+
     this.exitEmitter.update();
-    
+
     // TODO does this also need to be interpolated?
     this.player.addYaw(this.yawQueue);
     this.yawQueue = 0;
@@ -659,12 +683,15 @@ export default class Game {
       this.fadeTimer -= UPDATE_FRAME_MS;
     }
 
-    const alpha = this.pendingUpdateTime / UPDATE_FRAME_MS;
+    let alpha = this.pendingUpdateTime / UPDATE_FRAME_MS;
+    if (this.paused) {
+      alpha = 0;
+    }
 
     this.lastUpdate = now;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
-    
+
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -720,7 +747,11 @@ export default class Game {
 
     gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.exitFloorVertices.length / 3);
 
-    this.deathRenderer.render(this.death, this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
+    for (let death of this.enemies) {
+      this.deathRenderer.render(death, this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
+    }
+
+    //
     this.exitEmitter.render(this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, alpha);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -730,12 +761,12 @@ export default class Game {
     const orthoColorUni = gl.getUniformLocation(this.orthoProgram, 'color');
     const orthoColorMixUni = gl.getUniformLocation(this.orthoProgram, 'color_mix');
     gl.uniformMatrix4fv(orthoProjUni, false, this.orthoProj);
-    gl.uniform4f(orthoColorUni, 0, 0, 0, 1);
+    gl.uniform4fv(orthoColorUni, this.fadeColor);
     gl.uniform1f(orthoColorMixUni, this.getFadeAmount());
-    
+
     const orthoPosAttr = gl.getAttribLocation(this.orthoProgram, 'position');
     const orthoTexCoordAttr = gl.getAttribLocation(this.orthoProgram, 'texcoord');
-    
+
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
     gl.enableVertexAttribArray(orthoPosAttr);
@@ -792,7 +823,7 @@ export default class Game {
           // not user-initiated, I don't have time to research workarounds now
         }
       }
-      
+
     }
   }
 
@@ -843,11 +874,29 @@ export default class Game {
 
   killPlayer() {
     this.assetMan.tryPlayAudio('playerdeath');
-    this.setLevel(new Level(leveldata[this.levelID]));
+    this.player.dead = true;
+    this.fadeTimer = 2000;
+    this.fadeColor = [125 / 255, 0, 0, 1];
+    this.paused = true;
+    this.fadeDirection = 'out';
+    setTimeout(() => {
+      this.setLevel(new Level(leveldata[this.levelID]));
+      this.fadeTimer = 2000;
+      this.fadeDirection = 'in';
+      setTimeout(() => {
+        this.paused = false;
+      }, 2000);
+    }, 2000);
   }
 
   getFadeAmount() {
-    return Math.max(this.fadeTimer / 2000, 0);
+    const a = Math.max(this.fadeTimer / 2000, 0);
+
+    if (this.fadeDirection === 'in') {
+      return a;
+    } else {
+      return 1 - a;
+    }
   }
 
   setLevel(level: Level) {
@@ -864,12 +913,20 @@ export default class Game {
     this.player.beginUpdate();
     this.player.resetYaw();
 
-    const death = this.level.tilemap.getDeathTile();
-    this.death = new Death();
-    this.death.setWorldPos(
-      death.x * TILE_SIZE,
-      death.y * TILE_SIZE
-    );
+    this.enemies = [];
+
+    for (let y = 0; y < this.level.tilemap.getHeight(); ++y) {
+      for (let x = 0; x < this.level.tilemap.getWidth(); ++x) {
+        if (this.level.tilemap.getFlag(x, y) & DEATH) {
+          const death = new Death();
+          death.setWorldPos(
+            x * TILE_SIZE,
+            y * TILE_SIZE
+          );
+          this.enemies.push(death);
+        }
+      }
+    }
 
     const exit = this.level.tilemap.getExitTile();
     this.exitEmitter.setWorldPos(exit.x * TILE_SIZE, exit.y * TILE_SIZE);
@@ -901,12 +958,24 @@ export default class Game {
 
   nextLevel() {
     this.assetMan.tryPlayAudio('levelcomplete');
-    ++this.levelID;
-    if (this.levelID === leveldata.length) {
-      this.win();
-      return;
-    }
-    this.setLevel(new Level(leveldata[this.levelID]));
+
+    this.fadeTimer = 2000;
+    this.fadeColor = [0, 0, 0, 1];
+    this.paused = true;
+    this.fadeDirection = 'out';
+    setTimeout(() => {
+      ++this.levelID;
+      if (this.levelID === leveldata.length) {
+        this.win();
+        return;
+      }
+      this.setLevel(new Level(leveldata[this.levelID]));
+      this.fadeTimer = 2000;
+      this.fadeDirection = 'in';
+      setTimeout(() => {
+        this.paused = false;
+      }, 2000);
+    }, 2000);
   }
 
   onGameFinished(f) {
