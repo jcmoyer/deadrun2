@@ -6,18 +6,26 @@ import { toMapX, toMapY } from './level';
 
 const deathVS = `
 attribute vec4 position;
-attribute vec4 prev_position;
+attribute vec2 texcoord;
 
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 model;
 
 uniform highp float interpolation;
-uniform highp float sprite_scale;
+
+varying highp vec2 f_texcoord;
 
 void main() {
-  vec4 interp_pos = mix(prev_position, position, interpolation);
-  gl_Position = projection * view * interp_pos;
-  gl_PointSize = sprite_scale / gl_Position.w;
+  mat4 model_view = view * model;
+  model_view[0][0] = 1.0;
+  model_view[0][1] = 0.0;
+  model_view[0][2] = 0.0;
+  model_view[2][0] = 0.0;
+  model_view[2][1] = 1.0;
+  model_view[2][2] = 0.0;
+  gl_Position = projection * model_view * position;
+  f_texcoord = texcoord;
 }
 `;
 
@@ -27,13 +35,14 @@ uniform sampler2D death_texture;
 uniform highp vec4  fog_color;
 uniform highp float fog_density;
 
+varying highp vec2 f_texcoord;
+
 void main() {
   highp float dist = gl_FragCoord.z / gl_FragCoord.w;
   highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
   fog              = clamp(fog, 0.0, 1.0);
 
-  highp vec2 texcoord   = gl_PointCoord;
-  highp vec4 base_color = texture2D(death_texture, texcoord);
+  highp vec4 base_color = texture2D(death_texture, f_texcoord);
 
   gl_FragColor = mix(fog_color, base_color, fog);
   gl_FragColor.a = base_color.a;
@@ -131,27 +140,44 @@ export class DeathRenderer {
   private pointBuffer: WebGLBuffer;
 
   private positionAttrib: number;
-  private prevPositionAttrib: number;
+  private texcoordAttrib: number;
 
   private viewUni: WebGLUniformLocation;
   private projUni: WebGLUniformLocation;
+  private modelUni: WebGLUniformLocation;
   private interpolationUni: WebGLUniformLocation;
   private fogColorUni: WebGLUniformLocation;
   private fogDensityUni: WebGLUniformLocation;
-  private spriteScaleUni: WebGLUniformLocation;
+
+  // scratch buffers for calculation so we don't allocate every frame
+  private world: mat4 = mat4.create();
+  private translation: vec3 = vec3.create();
 
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl;
     this.pointBuffer = gl.createBuffer();
     this.program = glutil.buildProgram(gl, deathVS, deathFS);
     this.positionAttrib = gl.getAttribLocation(this.program, 'position');
-    this.prevPositionAttrib = gl.getAttribLocation(this.program, 'prev_position');
+    this.texcoordAttrib = gl.getAttribLocation(this.program, 'texcoord');
     this.viewUni = gl.getUniformLocation(this.program, 'view');
     this.projUni = gl.getUniformLocation(this.program, 'projection');
+    this.modelUni = gl.getUniformLocation(this.program, 'model');
     this.interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
     this.fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
     this.fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
-    this.spriteScaleUni = gl.getUniformLocation(this.program, 'sprite_scale');
+
+    const ENT_SIZE = 14;
+    const vertexData = new Float32Array([
+      -ENT_SIZE, 0, ENT_SIZE, 0, 0,
+      -ENT_SIZE, 0, -ENT_SIZE, 0, 1,
+      ENT_SIZE, 0, -ENT_SIZE, 1, 1,
+
+      ENT_SIZE, 0, -ENT_SIZE, 1, 1,
+      ENT_SIZE, 0, ENT_SIZE, 1, 0,
+      -ENT_SIZE, 0, ENT_SIZE, 0, 0,
+    ]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
   }
 
   setTexture(t: WebGLTexture) {
@@ -163,29 +189,22 @@ export class DeathRenderer {
     gl.useProgram(this.program);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
 
-    const pointData = new Float32Array([
-      // TODO previous position (also change pointers below)
-      death.prevWorldPos[0], death.prevWorldPos[1], death.prevWorldPos[2],
-      // latest position
-      death.worldPos[0], death.worldPos[1], death.worldPos[2]
-    ]);
-
-    gl.bufferData(gl.ARRAY_BUFFER, pointData, gl.STREAM_DRAW);
+    vec3.lerp(this.translation, death.prevWorldPos, death.worldPos, alpha);
+    mat4.fromTranslation(this.world, this.translation);
 
     gl.enableVertexAttribArray(this.positionAttrib);
-    gl.vertexAttribPointer(this.positionAttrib, 3, gl.FLOAT, false, 0, 12);
-    gl.enableVertexAttribArray(this.prevPositionAttrib);
-    gl.vertexAttribPointer(this.prevPositionAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.positionAttrib, 3, gl.FLOAT, false, 20, 0);
+    gl.enableVertexAttribArray(this.texcoordAttrib);
+    gl.vertexAttribPointer(this.texcoordAttrib, 2, gl.FLOAT, false, 20, 12);
 
     gl.uniformMatrix4fv(this.viewUni, false, view);
     gl.uniformMatrix4fv(this.projUni, false, proj);
+    gl.uniformMatrix4fv(this.modelUni, false, this.world);
     gl.uniform1f(this.interpolationUni, alpha);
     gl.uniform4fv(this.fogColorUni, fogColor);
     gl.uniform1f(this.fogDensityUni, fogDensity);
-    // don't ask
-    gl.uniform1f(this.spriteScaleUni, 14096);
 
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.drawArrays(gl.POINTS, 0, 1);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 }
