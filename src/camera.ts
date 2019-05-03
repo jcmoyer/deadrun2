@@ -1,28 +1,28 @@
-import * as glm from 'gl-matrix';
+import { vec3, mat4 } from 'gl-matrix';
 
 export class Camera {
-  private up: glm.vec3;
-  private eye: glm.vec3;
-  private forward: glm.vec3;
-  private right: glm.vec3;
+  private up: vec3;
+  private eye: vec3;
+  private forward: vec3;
+  private right: vec3;
 
   // contains view matrix for shader
-  private view: glm.mat4;
+  private view: mat4;
 
   public yaw = 0;
   private pitch = 0;
 
   constructor() {
-    this.up = glm.vec3.set(
-      glm.vec3.create(),
+    this.up = vec3.set(
+      vec3.create(),
       0, 1, 0
     );
-    this.eye = glm.vec3.set(
-      glm.vec3.create(),
+    this.eye = vec3.set(
+      vec3.create(),
       0, 0, 0
     );
-    this.forward = glm.vec3.set(
-      glm.vec3.create(),
+    this.forward = vec3.set(
+      vec3.create(),
       0, 0, -1
     );
   }
@@ -32,7 +32,7 @@ export class Camera {
   }
 
   getFront() {
-    const v = glm.vec3.create();
+    const v = vec3.create();
     v[0] = Math.cos(this.pitch) * Math.cos(this.yaw);
     v[1] = Math.sin(this.pitch);
     v[2] = Math.cos(this.pitch) * Math.sin(this.yaw);
@@ -40,18 +40,18 @@ export class Camera {
   }
 
   getLook() {
-    glm.vec3.normalize(this.forward, this.getFront());
+    vec3.normalize(this.forward, this.getFront());
 
-    const look = glm.vec3.clone(this.eye);
-    glm.vec3.add(look, look, this.forward);
+    const look = vec3.clone(this.eye);
+    vec3.add(look, look, this.forward);
     return look;
   }
 
   move(d: number) {
-    const forceVec = glm.vec3.clone(this.forward);
+    const forceVec = vec3.clone(this.forward);
 
-    glm.vec3.mul(forceVec, forceVec, [d, d, d]);
-    glm.vec3.add(
+    vec3.mul(forceVec, forceVec, [d, d, d]);
+    vec3.add(
       this.eye,
       this.eye,
       forceVec
@@ -59,15 +59,15 @@ export class Camera {
   }
 
   strafe(d: number) {
-    this.right = glm.vec3.cross(
-      glm.vec3.create(),
+    this.right = vec3.cross(
+      vec3.create(),
       this.forward,
       this.up
     );
 
-    const forceVec = glm.vec3.clone(this.right);
-    glm.vec3.mul(forceVec, forceVec, [d, d, d]);
-    glm.vec3.add(
+    const forceVec = vec3.clone(this.right);
+    vec3.mul(forceVec, forceVec, [d, d, d]);
+    vec3.add(
       this.eye,
       this.eye,
       forceVec
@@ -75,7 +75,7 @@ export class Camera {
   }
 
   setEye(x: number, y: number, z: number) {
-    glm.vec3.set(
+    vec3.set(
       this.eye, x, y, z
     );
   }
@@ -86,19 +86,19 @@ export class Camera {
 
   rotateY(r: number) {
     this.yaw += r;
-    glm.vec3.normalize(this.forward, this.getFront());
+    vec3.normalize(this.forward, this.getFront());
   }
 
   updateViewMatrix() {
-    this.view = glm.mat4.lookAt(
-      glm.mat4.create(),
+    this.view = mat4.lookAt(
+      mat4.create(),
       this.eye,
       this.getLook(),
       this.up
     );
   }
 
-  getViewMatrix(): glm.mat4 {
+  getViewMatrix(): mat4 {
     this.updateViewMatrix();
     return this.view;
   }

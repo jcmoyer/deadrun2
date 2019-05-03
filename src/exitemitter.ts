@@ -1,5 +1,5 @@
-import {buildProgram} from './glutil';
-import * as glm from 'gl-matrix';
+import { buildProgram } from './glutil';
+import { vec3, mat4 } from 'gl-matrix';
 
 const emitterVS = `
 attribute vec4 position;
@@ -40,7 +40,7 @@ export default class ExitEmitter {
   private prevPositions: Float32Array;
   private prevPosBuffer: WebGLBuffer;
   private program: WebGLProgram;
-  private worldPos: glm.vec3;
+  private worldPos: vec3;
   private particleCount = 30;
 
   private prevPosAttrib: number;
@@ -69,8 +69,8 @@ export default class ExitEmitter {
   }
 
   setWorldPos(x: number, z: number) {
-    this.worldPos = glm.vec3.create();
-    glm.vec3.set(this.worldPos, x, 0, z);
+    this.worldPos = vec3.create();
+    vec3.set(this.worldPos, x, 0, z);
     this.initParticles();
   }
 
@@ -109,7 +109,7 @@ export default class ExitEmitter {
     }
   }
 
-  render(view: glm.mat4, proj: glm.mat4, fogColor: number[], fogDensity: number, alpha: number) {
+  render(view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
     gl.useProgram(this.program);
 

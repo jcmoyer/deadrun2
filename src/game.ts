@@ -1,4 +1,4 @@
-import * as glm from "gl-matrix";
+import { vec3, mat4 } from 'gl-matrix';
 import { Camera } from "./camera";
 import { buildProgram, loadTexture } from './glutil';
 import { AssetManager } from './assetmanager';
@@ -481,9 +481,9 @@ class ChantPlayer {
 export default class Game {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
-  private renderClosure: typeof Game.prototype.render;
+  private renderClosure: typeof Game.prototype.render; 
 
-  private projMatrix: glm.mat4;
+  private projMatrix: mat4;
   private player: Player = new Player();
   private enemies: Death[];
 
@@ -527,7 +527,7 @@ export default class Game {
   private fbTexture: WebGLTexture;
   private fbDepthBuffer: WebGLRenderbuffer;
 
-  private orthoProj: glm.mat4;
+  private orthoProj: mat4;
   private orthoProgram: WebGLProgram;
   private orthoBuffer: WebGLBuffer;
 
@@ -674,8 +674,8 @@ export default class Game {
     this.player.setWorldPos(new_px, new_pz);
 
     // TODO: clean this up by converting player worldpos to vec3...
-    const playerWorld = glm.vec3.create();
-    glm.vec3.set(playerWorld, this.player.pos[0], 16, this.player.pos[1]);
+    const playerWorld = vec3.create();
+    vec3.set(playerWorld, this.player.pos[0], 16, this.player.pos[1]);
 
     const playerMapX = toMapX(this.player.getWorldX());
     const playerMapY = toMapY(this.player.getWorldZ());
@@ -683,7 +683,7 @@ export default class Game {
     const exitTile = this.level.tilemap.getExitTile();
 
     for (let death of this.enemies) {
-      if (glm.vec3.dist(death.worldPos, playerWorld) <= 16) {
+      if (vec3.dist(death.worldPos, playerWorld) <= 16) {
         this.killPlayer();
         return;
       }
@@ -699,7 +699,7 @@ export default class Game {
     }
 
     this.enemies.sort((a, b) => {
-      return glm.vec3.dist(playerWorld, b.worldPos) - glm.vec3.dist(playerWorld, a.worldPos);
+      return vec3.dist(playerWorld, b.worldPos) - vec3.dist(playerWorld, a.worldPos);
     });
 
     this.exitEmitter.update();
@@ -871,11 +871,11 @@ export default class Game {
     this.canvas.width = this.canvas.clientWidth;
     this.canvas.height = this.canvas.clientHeight;
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.projMatrix = glm.mat4.perspective(
-      glm.mat4.create(), Math.PI / 2, this.canvas.width / this.canvas.height, 0.1, 1000
+    this.projMatrix = mat4.perspective(
+      mat4.create(), Math.PI / 2, this.canvas.width / this.canvas.height, 0.1, 1000
     );
-    this.orthoProj = glm.mat4.ortho(
-      glm.mat4.create(),
+    this.orthoProj = mat4.ortho(
+      mat4.create(),
       -1, 1, -1, 1, 0, 1
     );
     this.createFBTexture();

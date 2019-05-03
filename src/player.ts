@@ -1,41 +1,41 @@
-import {Camera} from './camera';
-import * as glm from 'gl-matrix';
+import { Camera } from './camera';
+import { vec2, vec3, mat4 } from 'gl-matrix';
 
 export class Player {
   public cam: Camera = new Camera();
-  public pos: glm.vec2;
-  public prevEye: glm.vec3;
-  public prevLook: glm.vec3;
+  public pos: vec2;
+  public prevEye: vec3;
+  public prevLook: vec3;
   public yaw = 0;
   public dead = false;
 
   constructor() {
-    this.pos = glm.vec2.create();
+    this.pos = vec2.create();
     this.syncCamToMe();
-    this.prevEye = glm.vec3.clone(this.cam.getEye());
-    this.prevLook = glm.vec3.clone(this.cam.getLook());
+    this.prevEye = vec3.clone(this.cam.getEye());
+    this.prevLook = vec3.clone(this.cam.getLook());
   }
 
   beginUpdate() {
-    this.prevEye = glm.vec3.clone(this.cam.getEye());
-    this.prevLook = glm.vec3.clone(this.cam.getLook());
+    this.prevEye = vec3.clone(this.cam.getEye());
+    this.prevLook = vec3.clone(this.cam.getLook());
   }
 
-  getInterpolatedCameraPosition(alpha: number): glm.vec3 {
-    const interp = glm.vec3.create();
-    glm.vec3.lerp(interp, this.prevEye, this.cam.getEye(), alpha);
+  getInterpolatedCameraPosition(alpha: number): vec3 {
+    const interp = vec3.create();
+    vec3.lerp(interp, this.prevEye, this.cam.getEye(), alpha);
     return interp;
   }
 
-  getInterpolatedCameraLook(alpha: number): glm.vec3 {
-    const interp = glm.vec3.create();
-    glm.vec3.lerp(interp, this.prevLook, this.cam.getLook(), alpha);
+  getInterpolatedCameraLook(alpha: number): vec3 {
+    const interp = vec3.create();
+    vec3.lerp(interp, this.prevLook, this.cam.getLook(), alpha);
     return interp;
   }
 
-  getInterpolatedViewMatrix(alpha: number): glm.mat4 {
-    const view = glm.mat4.create();
-    return glm.mat4.lookAt(
+  getInterpolatedViewMatrix(alpha: number): mat4 {
+    const view = mat4.create();
+    return mat4.lookAt(
       view,
       this.getInterpolatedCameraPosition(alpha),
       this.getInterpolatedCameraLook(alpha),

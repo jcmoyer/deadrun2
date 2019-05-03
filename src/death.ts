@@ -1,6 +1,6 @@
-import * as glm from 'gl-matrix';
+import { vec3, mat4 } from 'gl-matrix';
 import * as glutil from './glutil';
-import {Player} from './player';
+import { Player } from './player';
 import { Tilemap } from './tilemap';
 import { toMapX, toMapY } from './level';
 
@@ -41,20 +41,20 @@ void main() {
 `;
 
 export class Death {
-  public prevWorldPos: glm.vec3;
-  public worldPos: glm.vec3;
-  private velocity: glm.vec3;
+  public prevWorldPos: vec3;
+  public worldPos: vec3;
+  private velocity: vec3;
   private awake: boolean = false;
   private wakeCallback: () => void;
 
   constructor() {
-    this.worldPos = glm.vec3.create();
-    this.velocity = glm.vec3.create();
-    this.prevWorldPos = glm.vec3.create();
+    this.worldPos = vec3.create();
+    this.velocity = vec3.create();
+    this.prevWorldPos = vec3.create();
   }
 
   beginUpdate() {
-    glm.vec3.copy(this.prevWorldPos, this.worldPos);
+    vec3.copy(this.prevWorldPos, this.worldPos);
   }
 
   update(player: Player, tilemap: Tilemap) {
@@ -64,20 +64,20 @@ export class Death {
     const py = player.getWorldZ();
     const dx = px - this.worldPos[0];
     const dy = py - this.worldPos[2];
-    const dir = glm.vec3.create();
-    glm.vec3.set(dir, dx, 0, dy);
-    glm.vec3.normalize(dir, dir);
-    
+    const dir = vec3.create();
+    vec3.set(dir, dx, 0, dy);
+    vec3.normalize(dir, dir);
+
     if (this.awake) {
-      glm.vec3.set(this.velocity, px - this.worldPos[0], 0, py - this.worldPos[2]);
-      glm.vec3.normalize(this.velocity, this.velocity);
-      glm.vec3.scale(this.velocity, this.velocity, 0.2);
-      glm.vec3.add(this.worldPos, this.worldPos, this.velocity);
+      vec3.set(this.velocity, px - this.worldPos[0], 0, py - this.worldPos[2]);
+      vec3.normalize(this.velocity, this.velocity);
+      vec3.scale(this.velocity, this.velocity, 0.2);
+      vec3.add(this.worldPos, this.worldPos, this.velocity);
     } else {
-      const ray = glm.vec3.clone(dir);
-      glm.vec3.scale(ray, ray, 16);
-      const amt = glm.vec3.clone(ray);
-      glm.vec3.copy(ray, this.worldPos);
+      const ray = vec3.clone(dir);
+      vec3.scale(ray, ray, 16);
+      const amt = vec3.clone(ray);
+      vec3.copy(ray, this.worldPos);
       for (let i = 0; i < 12; ++i) {
         const rmx = toMapX(ray[0]);
         const rmy = toMapY(ray[2]);
@@ -92,7 +92,7 @@ export class Death {
           this.wake();
         }
 
-        glm.vec3.add(ray, ray, amt);
+        vec3.add(ray, ray, amt);
       }
     }
     this.worldPos[1] = 16 + Math.sin(Date.now() / 1000) * 2;
@@ -158,7 +158,7 @@ export class DeathRenderer {
     this.texture = t;
   }
 
-  render(death: Death, view: glm.mat4, proj: glm.mat4, fogColor: number[], fogDensity: number, alpha: number) {
+  render(death: Death, view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
     gl.useProgram(this.program);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
@@ -184,7 +184,7 @@ export class DeathRenderer {
     gl.uniform1f(this.fogDensityUni, fogDensity);
     // don't ask
     gl.uniform1f(this.spriteScaleUni, 14096);
-    
+
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.drawArrays(gl.POINTS, 0, 1);
   }
