@@ -130,10 +130,28 @@ export class DeathRenderer {
   private program: WebGLProgram;
   private pointBuffer: WebGLBuffer;
 
+  private positionAttrib: number;
+  private prevPositionAttrib: number;
+
+  private viewUni: WebGLUniformLocation;
+  private projUni: WebGLUniformLocation;
+  private interpolationUni: WebGLUniformLocation;
+  private fogColorUni: WebGLUniformLocation;
+  private fogDensityUni: WebGLUniformLocation;
+  private spriteScaleUni: WebGLUniformLocation;
+
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl;
     this.pointBuffer = gl.createBuffer();
     this.program = glutil.buildProgram(gl, deathVS, deathFS);
+    this.positionAttrib = gl.getAttribLocation(this.program, 'position');
+    this.prevPositionAttrib = gl.getAttribLocation(this.program, 'prev_position');
+    this.viewUni = gl.getUniformLocation(this.program, 'view');
+    this.projUni = gl.getUniformLocation(this.program, 'projection');
+    this.interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
+    this.fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
+    this.fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
+    this.spriteScaleUni = gl.getUniformLocation(this.program, 'sprite_scale');
   }
 
   setTexture(t: WebGLTexture) {
@@ -154,33 +172,18 @@ export class DeathRenderer {
 
     gl.bufferData(gl.ARRAY_BUFFER, pointData, gl.STREAM_DRAW);
 
-    const positionAttrib = gl.getAttribLocation(this.program, 'position');
-    const prevPositionAttrib = gl.getAttribLocation(this.program, 'prev_position');
+    gl.enableVertexAttribArray(this.positionAttrib);
+    gl.vertexAttribPointer(this.positionAttrib, 3, gl.FLOAT, false, 0, 12);
+    gl.enableVertexAttribArray(this.prevPositionAttrib);
+    gl.vertexAttribPointer(this.prevPositionAttrib, 3, gl.FLOAT, false, 0, 0);
 
-    const viewUni = gl.getUniformLocation(this.program, 'view');
-    const projUni = gl.getUniformLocation(this.program, 'projection');
-    const interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
-    const fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
-    const fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
-    const spriteScaleUni = gl.getUniformLocation(this.program, 'sprite_scale');
-
-    gl.enableVertexAttribArray(positionAttrib);
-    gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 12);
-    gl.enableVertexAttribArray(prevPositionAttrib);
-    gl.vertexAttribPointer(prevPositionAttrib, 3, gl.FLOAT, false, 0, 0);
-
-    gl.uniformMatrix4fv(viewUni, false, view);
-    gl.uniformMatrix4fv(projUni, false, proj);
-    gl.uniform1f(interpolationUni, alpha);
-    gl.uniform4f(fogColorUni,
-      fogColor[0],
-      fogColor[1],
-      fogColor[2],
-      fogColor[3]
-    );
-    gl.uniform1f(fogDensityUni, fogDensity);
+    gl.uniformMatrix4fv(this.viewUni, false, view);
+    gl.uniformMatrix4fv(this.projUni, false, proj);
+    gl.uniform1f(this.interpolationUni, alpha);
+    gl.uniform4fv(this.fogColorUni, fogColor);
+    gl.uniform1f(this.fogDensityUni, fogDensity);
     // don't ask
-    gl.uniform1f(spriteScaleUni, 14096);
+    gl.uniform1f(this.spriteScaleUni, 14096);
     
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.drawArrays(gl.POINTS, 0, 1);

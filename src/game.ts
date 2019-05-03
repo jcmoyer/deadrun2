@@ -539,6 +539,21 @@ export default class Game {
   private textureCache: GLTextureCache;
   private chantPlayer: ChantPlayer;
 
+  private orthoProjUni: WebGLUniformLocation;
+  private orthoColorUni: WebGLUniformLocation;
+  private orthoColorMixUni: WebGLUniformLocation;
+  private orthoPosAttr: number;
+  private orthoTexCoordAttr: number;
+
+  // TODO: move into level renderer
+  private levelProjUni: WebGLUniformLocation;
+  private levelViewUni: WebGLUniformLocation;
+  private levelFogColorUni: WebGLUniformLocation;
+  private levelFogDensityUni: WebGLUniformLocation;
+  private levelPositionAttr: number;
+  private levelTexCoordAttr: number;
+  private levelShadeAttr: number;
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -566,6 +581,13 @@ export default class Game {
 
     // TODO: error handling
     this.levelProg = buildProgram(this.gl, levelVS, levelFS);
+    this.levelProjUni = gl.getUniformLocation(this.levelProg, 'projection');
+    this.levelViewUni = gl.getUniformLocation(this.levelProg, 'view');
+    this.levelFogColorUni = gl.getUniformLocation(this.levelProg, 'fog_color');
+    this.levelFogDensityUni = gl.getUniformLocation(this.levelProg, 'fog_density');
+    this.levelPositionAttr = gl.getAttribLocation(this.levelProg, 'position');
+    this.levelTexCoordAttr = gl.getAttribLocation(this.levelProg, 'texcoord');
+    this.levelShadeAttr = gl.getAttribLocation(this.levelProg, 'shade');
 
     this.exitTexture = this.textureCache.getTexture('exitfloor');
 
@@ -582,6 +604,11 @@ export default class Game {
     this.createFBTexture();
 
     this.orthoProgram = buildProgram(gl, orthoQuadVS, orthoQuadFS);
+    this.orthoProjUni = gl.getUniformLocation(this.orthoProgram, 'projection');
+    this.orthoColorUni = gl.getUniformLocation(this.orthoProgram, 'color');
+    this.orthoColorMixUni = gl.getUniformLocation(this.orthoProgram, 'color_mix');
+    this.orthoPosAttr = gl.getAttribLocation(this.orthoProgram, 'position');
+    this.orthoTexCoordAttr = gl.getAttribLocation(this.orthoProgram, 'texcoord');
 
     this.orthoBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
@@ -712,33 +739,22 @@ export default class Game {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.useProgram(this.levelProg);
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.levelProg, 'projection'), false, this.projMatrix);
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.levelProg, 'view'), false,
-      this.player.getInterpolatedViewMatrix(alpha)
-    );
-    gl.uniform4f(gl.getUniformLocation(this.levelProg, 'fog_color'),
-      this.level.fogColor[0],
-      this.level.fogColor[1],
-      this.level.fogColor[2],
-      this.level.fogColor[3]
-    );
-    gl.uniform1f(gl.getUniformLocation(this.levelProg, 'fog_density'), this.level.fogDensity);
-    
+    gl.uniformMatrix4fv(this.levelProjUni, false, this.projMatrix);
+    gl.uniformMatrix4fv(this.levelViewUni, false, this.player.getInterpolatedViewMatrix(alpha));
+    gl.uniform4fv(this.levelFogColorUni, this.level.fogColor);
+    gl.uniform1f(this.levelFogDensityUni, this.level.fogDensity);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallPosBuffer);
-    const positionAttrib = gl.getAttribLocation(this.levelProg, 'position');
-    gl.enableVertexAttribArray(positionAttrib);
-    gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.levelPositionAttr);
+    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallTexCoordBuffer);
-    const texCoordAttrib = gl.getAttribLocation(this.levelProg, 'texcoord');
-    gl.enableVertexAttribArray(texCoordAttrib);
-    gl.vertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.levelTexCoordAttr);
+    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallShadeBuffer);
-    const shadeAttrib = gl.getAttribLocation(this.levelProg, 'shade');
-    gl.enableVertexAttribArray(shadeAttrib);
-    gl.vertexAttribPointer(shadeAttrib, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.levelShadeAttr);
+    gl.vertexAttribPointer(this.levelShadeAttr, 1, gl.FLOAT, false, 0, 0);
 
     gl.bindTexture(gl.TEXTURE_2D, this.wallTexture);
 
@@ -746,21 +762,21 @@ export default class Game {
 
     // draw floors
     gl.bindBuffer(gl.ARRAY_BUFFER, this.floorPosBuffer);
-    gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.floorTexCoordBuffer);
-    gl.vertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
 
-    gl.disableVertexAttribArray(shadeAttrib);
+    gl.disableVertexAttribArray(this.levelShadeAttr);
 
     gl.bindTexture(gl.TEXTURE_2D, this.floorTexture);
     gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.floorVertices.length / 3);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.exitPosBuffer);
-    gl.vertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.exitTexCoordBuffer);
-    gl.vertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
     gl.bindTexture(gl.TEXTURE_2D, this.exitTexture);
 
     gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.exitFloorVertices.length / 3);
@@ -775,22 +791,15 @@ export default class Game {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     gl.useProgram(this.orthoProgram);
-    const orthoProjUni = gl.getUniformLocation(this.orthoProgram, 'projection');
-    const orthoColorUni = gl.getUniformLocation(this.orthoProgram, 'color');
-    const orthoColorMixUni = gl.getUniformLocation(this.orthoProgram, 'color_mix');
-    gl.uniformMatrix4fv(orthoProjUni, false, this.orthoProj);
-    gl.uniform4fv(orthoColorUni, this.fadeColor);
-    gl.uniform1f(orthoColorMixUni, this.getFadeAmount());
-
-    const orthoPosAttr = gl.getAttribLocation(this.orthoProgram, 'position');
-    const orthoTexCoordAttr = gl.getAttribLocation(this.orthoProgram, 'texcoord');
-
+    gl.uniformMatrix4fv(this.orthoProjUni, false, this.orthoProj);
+    gl.uniform4fv(this.orthoColorUni, this.fadeColor);
+    gl.uniform1f(this.orthoColorMixUni, this.getFadeAmount());
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
-    gl.enableVertexAttribArray(orthoPosAttr);
-    gl.vertexAttribPointer(orthoPosAttr, 3, gl.FLOAT, false, 20, 0);
-    gl.enableVertexAttribArray(orthoTexCoordAttr);
-    gl.vertexAttribPointer(orthoTexCoordAttr, 2, gl.FLOAT, false, 20, 12);
+    gl.enableVertexAttribArray(this.orthoPosAttr);
+    gl.vertexAttribPointer(this.orthoPosAttr, 3, gl.FLOAT, false, 20, 0);
+    gl.enableVertexAttribArray(this.orthoTexCoordAttr);
+    gl.vertexAttribPointer(this.orthoTexCoordAttr, 2, gl.FLOAT, false, 20, 12);
 
     gl.bindTexture(gl.TEXTURE_2D, this.fbTexture);
 

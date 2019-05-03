@@ -42,10 +42,25 @@ export default class ExitEmitter {
   private program: WebGLProgram;
   private worldPos: glm.vec3;
   private particleCount = 30;
-  
+
+  private prevPosAttrib: number;
+  private posAttrib: number;
+  private viewUni: WebGLUniformLocation;
+  private projUni: WebGLUniformLocation;
+  private interpolationUni: WebGLUniformLocation;
+  private fogColorUni: WebGLUniformLocation;
+  private fogDensityUni: WebGLUniformLocation;
+
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl;
     this.program = buildProgram(gl, emitterVS, emitterFS);
+    this.prevPosAttrib = gl.getAttribLocation(this.program, 'prev_position');
+    this.posAttrib = gl.getAttribLocation(this.program, 'position');
+    this.viewUni = gl.getUniformLocation(this.program, 'view');
+    this.projUni = gl.getUniformLocation(this.program, 'projection');
+    this.interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
+    this.fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
+    this.fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
 
     this.prevPositions = new Float32Array(3 * this.particleCount);
     this.positions = new Float32Array(3 * this.particleCount);
@@ -100,32 +115,19 @@ export default class ExitEmitter {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.prevPosBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.prevPositions, gl.STREAM_DRAW);
-    const prevPosAttrib = gl.getAttribLocation(this.program, 'prev_position');
-    gl.enableVertexAttribArray(prevPosAttrib);
-    gl.vertexAttribPointer(prevPosAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.prevPosAttrib);
+    gl.vertexAttribPointer(this.prevPosAttrib, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.STREAM_DRAW);
-    const posAttrib = gl.getAttribLocation(this.program, 'position');
-    gl.enableVertexAttribArray(posAttrib);
-    gl.vertexAttribPointer(posAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.posAttrib);
+    gl.vertexAttribPointer(this.posAttrib, 3, gl.FLOAT, false, 0, 0);
 
-    const viewUni = gl.getUniformLocation(this.program, 'view');
-    const projUni = gl.getUniformLocation(this.program, 'projection');
-    const interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
-    const fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
-    const fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
-
-    gl.uniformMatrix4fv(viewUni, false, view);
-    gl.uniformMatrix4fv(projUni, false, proj);
-    gl.uniform1f(interpolationUni, alpha);
-    gl.uniform4f(fogColorUni,
-      fogColor[0],
-      fogColor[1],
-      fogColor[2],
-      fogColor[3]
-    );
-    gl.uniform1f(fogDensityUni, fogDensity);
+    gl.uniformMatrix4fv(this.viewUni, false, view);
+    gl.uniformMatrix4fv(this.projUni, false, proj);
+    gl.uniform1f(this.interpolationUni, alpha);
+    gl.uniform4fv(this.fogColorUni, fogColor);
+    gl.uniform1f(this.fogDensityUni, fogDensity);
 
     gl.drawArrays(gl.POINTS, 0, this.positions.length / 3);
   }
