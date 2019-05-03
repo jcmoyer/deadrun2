@@ -484,7 +484,6 @@ export default class Game {
   private renderClosure: any;
 
   private projMatrix: glm.mat4;
-  private camera: Camera;
   private player: Player = new Player();
   private enemies: Death[];
 
@@ -545,9 +544,6 @@ export default class Game {
 
     this.canvas = canvas;
     this.gl = this.canvas.getContext('webgl');
-
-    this.camera = new Camera();
-    this.camera.setEye(0, 16, 0);
 
     const gl = this.gl;
 

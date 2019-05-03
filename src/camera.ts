@@ -84,10 +84,6 @@ export class Camera {
     return this.up;
   }
 
-
-  lookAt(x, y, z) {
-  }
-
   rotateY(r) {
     this.yaw += r;
     glm.vec3.normalize(this.forward, this.getFront());

@@ -88,10 +88,6 @@ export class Tilemap {
     return this.findFirstWithFlag(SPAWN);
   }
 
-  getDeathTile(): Tile {
-    return this.findFirstWithFlag(DEATH);
-  }
-
   getExitTile(): Tile {
     return this.findFirstWithFlag(EXIT);
   }
