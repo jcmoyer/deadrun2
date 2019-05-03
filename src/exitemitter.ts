@@ -68,7 +68,7 @@ export default class ExitEmitter {
     this.prevPosBuffer = gl.createBuffer();
   }
 
-  setWorldPos(x, z) {
+  setWorldPos(x: number, z: number) {
     this.worldPos = glm.vec3.create();
     glm.vec3.set(this.worldPos, x, 0, z);
     this.initParticles();
@@ -80,7 +80,7 @@ export default class ExitEmitter {
     }
   }
 
-  initParticle(i) {
+  initParticle(i: number) {
     const a = Math.random() * 2 * Math.PI;
     this.prevPositions[i * 3 + 0] = this.positions[i * 3 + 0] = this.worldPos[0] + Math.cos(a) * 8;
     this.prevPositions[i * 3 + 1] = this.positions[i * 3 + 1] = this.worldPos[1] - Math.random() * 32;
@@ -89,7 +89,7 @@ export default class ExitEmitter {
 
   }
 
-  updateParticle(i) {
+  updateParticle(i: number) {
     // save prev pos for interpolation
     this.prevPositions[i * 3 + 0] = this.positions[i * 3 + 0];
     this.prevPositions[i * 3 + 1] = this.positions[i * 3 + 1];

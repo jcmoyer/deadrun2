@@ -17,8 +17,8 @@ class Asset {
 export class AssetManager {
   private assets: Map<string, Asset>;
   private pending: number = 0;
-  private onReadyCallback;
-  private onProgressCallback;
+  private onReadyCallback: () => void;
+  private onProgressCallback: (remain: number, total: number) => void;
   private assetsToLoadCount: number = 0;
 
   constructor() {
@@ -64,11 +64,11 @@ export class AssetManager {
     }
   }
 
-  onProgress(f) {
+  onProgress(f: typeof AssetManager.prototype.onProgressCallback) {
     this.onProgressCallback = f;
   }
 
-  onReady(f) {
+  onReady(f: typeof AssetManager.prototype.onReadyCallback) {
     this.onReadyCallback = f;
   }
 

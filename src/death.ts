@@ -45,7 +45,7 @@ export class Death {
   public worldPos: glm.vec3;
   private velocity: glm.vec3;
   private awake: boolean = false;
-  private wakeCallback;
+  private wakeCallback: () => void;
 
   constructor() {
     this.worldPos = glm.vec3.create();
@@ -98,7 +98,7 @@ export class Death {
     this.worldPos[1] = 16 + Math.sin(Date.now() / 1000) * 2;
   }
 
-  setWorldPos(x, z) {
+  setWorldPos(x: number, z: number) {
     this.worldPos[0] = x;
     this.worldPos[1] = 16;
     this.worldPos[2] = z;
@@ -119,7 +119,7 @@ export class Death {
     }
   }
 
-  onWake(f) {
+  onWake(f: typeof Death.prototype.wakeCallback) {
     this.wakeCallback = f;
   }
 }

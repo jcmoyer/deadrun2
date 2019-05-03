@@ -75,7 +75,7 @@ export class Player {
     return this.pos[1];
   }
 
-  setWorldPos(x, z) {
+  setWorldPos(x: number, z: number) {
     this.pos[0] = x;
     this.pos[1] = z;
     this.syncCamToMe();

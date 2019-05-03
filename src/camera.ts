@@ -74,7 +74,7 @@ export class Camera {
     );
   }
 
-  setEye(x, y, z) {
+  setEye(x: number, y: number, z: number) {
     glm.vec3.set(
       this.eye, x, y, z
     );
@@ -84,7 +84,7 @@ export class Camera {
     return this.up;
   }
 
-  rotateY(r) {
+  rotateY(r: number) {
     this.yaw += r;
     glm.vec3.normalize(this.forward, this.getFront());
   }

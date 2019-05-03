@@ -481,7 +481,7 @@ class ChantPlayer {
 export default class Game {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
-  private renderClosure: any;
+  private renderClosure: typeof Game.prototype.render;
 
   private projMatrix: glm.mat4;
   private player: Player = new Player();
@@ -521,7 +521,7 @@ export default class Game {
   private exitEmitter: ExitEmitter;
 
   private gameFinished = false;
-  private gameFinishedCallback;
+  private gameFinishedCallback: () => void;
 
   private fb: WebGLFramebuffer;
   private fbTexture: WebGLTexture;
@@ -626,7 +626,7 @@ export default class Game {
     this.setLevel(new Level(leveldata[this.levelID]));
   }
 
-  update(dt) {
+  update(dt: number) {
     if (this.paused) {
       this.yawQueue = 0;
       this.player.beginUpdate();
@@ -1030,7 +1030,7 @@ export default class Game {
     }, 2000);
   }
 
-  onGameFinished(f) {
+  onGameFinished(f: typeof Game.prototype.gameFinishedCallback) {
     this.gameFinishedCallback = f;
   }
 
