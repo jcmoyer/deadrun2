@@ -17,14 +17,11 @@ uniform highp float interpolation;
 varying highp vec2 f_texcoord;
 
 void main() {
-  mat4 model_view = view * model;
-  model_view[0][0] = 1.0;
-  model_view[0][1] = 0.0;
-  model_view[0][2] = 0.0;
-  model_view[2][0] = 0.0;
-  model_view[2][1] = 1.0;
-  model_view[2][2] = 0.0;
-  gl_Position = projection * model_view * position;
+  mat4 mv = view * model;
+  mv[0] = vec4(1, 0, 0, 0);
+  mv[1] = vec4(0, 1, 0, 0);
+  mv[2] = vec4(0, 0, 1, 0);
+  gl_Position = projection * mv * position;
   f_texcoord = texcoord;
 }
 `;
@@ -168,13 +165,13 @@ export class DeathRenderer {
 
     const ENT_SIZE = 14;
     const vertexData = new Float32Array([
-      -ENT_SIZE, 0, ENT_SIZE, 0, 0,
-      -ENT_SIZE, 0, -ENT_SIZE, 0, 1,
-      ENT_SIZE, 0, -ENT_SIZE, 1, 1,
+      -ENT_SIZE, ENT_SIZE, 0, 0, 0,
+      -ENT_SIZE, -ENT_SIZE, 0 , 0, 1,
+      ENT_SIZE, -ENT_SIZE, 0, 1, 1,
 
-      ENT_SIZE, 0, -ENT_SIZE, 1, 1,
-      ENT_SIZE, 0, ENT_SIZE, 1, 0,
-      -ENT_SIZE, 0, ENT_SIZE, 0, 0,
+      ENT_SIZE, -ENT_SIZE, 0, 1, 1,
+      ENT_SIZE, ENT_SIZE, 0, 1, 0,
+      -ENT_SIZE, ENT_SIZE, 0, 0, 0,
     ]);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
