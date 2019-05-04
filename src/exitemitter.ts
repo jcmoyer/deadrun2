@@ -2,8 +2,9 @@ import { buildProgram } from './glutil';
 import { vec3, mat4 } from 'gl-matrix';
 
 const emitterVS = `
-attribute vec4 position;
-attribute vec4 prev_position;
+attribute vec4 base_position;
+attribute highp float y_offset_0;
+attribute highp float y_offset_1;
 attribute highp float rotation;
 
 uniform mat4 model;
@@ -13,7 +14,8 @@ uniform mat4 projection;
 uniform highp float interpolation;
 
 void main() {
-  vec4 interp_pos = mix(prev_position, position, interpolation);
+  vec4 interp_pos = base_position;
+  interp_pos.y += mix(y_offset_0, y_offset_1, interpolation);
 
   // translate the model matrix relative to this vertex instead of the emitter so that
   // rotations are about the particle center rather than the emitter center
@@ -55,19 +57,22 @@ void main() {
 export default class ExitEmitter {
   private gl: WebGLRenderingContext;
   private indicesBuffer: WebGLBuffer;
-  private positions: Float32Array;
-  private posBuffer: WebGLBuffer;
-  private prevPositions: Float32Array;
-  private prevPosBuffer: WebGLBuffer;
+  private basePositions: Float32Array;
+  private basePosBuffer: WebGLBuffer;
+  private yOffset0Buffer: WebGLBuffer;
+  private yOffset1Buffer: WebGLBuffer;
+  private yOffsets: Float32Array;
+  private prevYOffsets: Float32Array;
   private rotationBuffer: WebGLBuffer;
   private program: WebGLProgram;
   private worldPos: vec3;
   private particleCount = 30;
   private emitHeight = 24;
 
-  private prevPosAttrib: number;
   private posAttrib: number;
   private rotationAttrib: number;
+  private yOffset0Attrib: number;
+  private yOffset1Attrib: number;
   private viewUni: WebGLUniformLocation;
   private projUni: WebGLUniformLocation;
   private interpolationUni: WebGLUniformLocation;
@@ -80,9 +85,10 @@ export default class ExitEmitter {
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl;
     this.program = buildProgram(gl, emitterVS, emitterFS);
-    this.prevPosAttrib = gl.getAttribLocation(this.program, 'prev_position');
     this.rotationAttrib = gl.getAttribLocation(this.program, 'rotation');
-    this.posAttrib = gl.getAttribLocation(this.program, 'position');
+    this.posAttrib = gl.getAttribLocation(this.program, 'base_position');
+    this.yOffset0Attrib = gl.getAttribLocation(this.program, 'y_offset_0');
+    this.yOffset1Attrib = gl.getAttribLocation(this.program, 'y_offset_1');
     this.modelUni = gl.getUniformLocation(this.program, 'model');
     this.viewUni = gl.getUniformLocation(this.program, 'view');
     this.projUni = gl.getUniformLocation(this.program, 'projection');
@@ -90,11 +96,13 @@ export default class ExitEmitter {
     this.fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
     this.fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
 
-    this.prevPositions = new Float32Array(3 * 4 * this.particleCount);
-    this.positions = new Float32Array(3 * 4 * this.particleCount);
-    this.posBuffer = gl.createBuffer();
-    this.prevPosBuffer = gl.createBuffer();
+    this.yOffsets = new Float32Array(4 * this.particleCount);
+    this.prevYOffsets = new Float32Array(4 * this.particleCount);
+    this.basePositions = new Float32Array(3 * 4 * this.particleCount);
+    this.basePosBuffer = gl.createBuffer();
     this.rotationBuffer = gl.createBuffer();
+    this.yOffset0Buffer = gl.createBuffer();
+    this.yOffset1Buffer = gl.createBuffer();
 
     const rotations = new Float32Array(this.particleCount * 4);
     for (let i = 0; i < this.particleCount; ++i) {
@@ -135,11 +143,15 @@ export default class ExitEmitter {
 
   initParticles() {
     for (let i = 0; i < this.particleCount; ++i) {
-      this.initParticle(i);
+      this.initBasePosition(i);
+      this.initOffset(i);
     }
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.basePosBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.basePositions, gl.STATIC_DRAW);
   }
 
-  initParticle(i: number) {
+  initBasePosition(i: number) {
     const ENT_SIZE = 1;
     const HALF_SIZE = ENT_SIZE / 2;
     const a = Math.random() * 2 * Math.PI;
@@ -148,33 +160,41 @@ export default class ExitEmitter {
     const localZ = + Math.sin(a) * 0;
     // generate 4 vertices centered about this point
     const base = i * 3 * 4;
-    this.prevPositions[base + 0] = this.positions[base + 0] = localX - HALF_SIZE;
-    this.prevPositions[base + 1] = this.positions[base + 1] = localY + HALF_SIZE;
-    this.prevPositions[base + 2] = this.positions[base + 2] = localZ;
+    this.basePositions[base + 0] = localX - HALF_SIZE;
+    this.basePositions[base + 1] = localY + HALF_SIZE;
+    this.basePositions[base + 2] = localZ;
 
-    this.prevPositions[base + 3] = this.positions[base + 3] = localX - HALF_SIZE;
-    this.prevPositions[base + 4] = this.positions[base + 4] = localY - HALF_SIZE;
-    this.prevPositions[base + 5] = this.positions[base + 5] = localZ;
+    this.basePositions[base + 3] = localX - HALF_SIZE;
+    this.basePositions[base + 4] = localY - HALF_SIZE;
+    this.basePositions[base + 5] = localZ;
 
-    this.prevPositions[base + 6] = this.positions[base + 6] = localX + HALF_SIZE;
-    this.prevPositions[base + 7] = this.positions[base + 7] = localY + HALF_SIZE;
-    this.prevPositions[base + 8] = this.positions[base + 8] = localZ;
+    this.basePositions[base + 6] = localX + HALF_SIZE;
+    this.basePositions[base + 7] = localY + HALF_SIZE;
+    this.basePositions[base + 8] = localZ;
 
-    this.prevPositions[base + 9] = this.positions[base + 9] = localX + HALF_SIZE;
-    this.prevPositions[base + 10] = this.positions[base + 10] = localY - HALF_SIZE;
-    this.prevPositions[base + 11] = this.positions[base + 11] = localZ;
+    this.basePositions[base + 9] = localX + HALF_SIZE;
+    this.basePositions[base + 10] = localY - HALF_SIZE;
+    this.basePositions[base + 11] = localZ;
+  }
+
+  initOffset(i: number) {
+    this.prevYOffsets[i * 4 + 0] = this.yOffsets[i * 4 + 0] = 0;
+    this.prevYOffsets[i * 4 + 1] = this.yOffsets[i * 4 + 1] = 0;
+    this.prevYOffsets[i * 4 + 2] = this.yOffsets[i * 4 + 2] = 0;
+    this.prevYOffsets[i * 4 + 3] = this.yOffsets[i * 4 + 3] = 0;
   }
 
   updateParticle(i: number) {
     // save prev pos for interpolation
     // since particles only move along the Y axis we only need to save that coordinate
-    this.prevPositions[i * 3 * 4 + 1] = this.positions[i * 3 * 4 + 1]++;
-    this.prevPositions[i * 3 * 4 + 4] = this.positions[i * 3 * 4 + 4]++;
-    this.prevPositions[i * 3 * 4 + 7] = this.positions[i * 3 * 4 + 7]++;
-    this.prevPositions[i * 3 * 4 + 10] = this.positions[i * 3 * 4 + 10]++;
+    this.prevYOffsets[i * 4 + 0] = this.yOffsets[i * 4 + 0]++;
+    this.prevYOffsets[i * 4 + 1] = this.yOffsets[i * 4 + 1]++;
+    this.prevYOffsets[i * 4 + 2] = this.yOffsets[i * 4 + 2]++;
+    this.prevYOffsets[i * 4 + 3] = this.yOffsets[i * 4 + 3]++;
 
-    if (this.positions[i * 3 * 4 + 1] > this.emitHeight) {
-      this.initParticle(i);
+    const worldY = this.basePositions[i * 3 * 4 + 1] + this.yOffsets[i * 4];
+    if (worldY > this.emitHeight) {
+      this.initOffset(i);
     }
   }
 
@@ -188,19 +208,23 @@ export default class ExitEmitter {
     const gl = this.gl;
     gl.useProgram(this.program);
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.basePosBuffer);
+    gl.enableVertexAttribArray(this.posAttrib);
+    gl.vertexAttribPointer(this.posAttrib, 3, gl.FLOAT, false, 0, 0);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, this.rotationBuffer);
     gl.enableVertexAttribArray(this.rotationAttrib);
     gl.vertexAttribPointer(this.rotationAttrib, 1, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.prevPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.prevPositions, gl.STREAM_DRAW);
-    gl.enableVertexAttribArray(this.prevPosAttrib);
-    gl.vertexAttribPointer(this.prevPosAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.yOffset0Buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.prevYOffsets, gl.STREAM_DRAW);
+    gl.enableVertexAttribArray(this.yOffset0Attrib);
+    gl.vertexAttribPointer(this.yOffset0Attrib, 1, gl.FLOAT, false, 0, 0);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.STREAM_DRAW);
-    gl.enableVertexAttribArray(this.posAttrib);
-    gl.vertexAttribPointer(this.posAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.yOffset1Buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.yOffsets, gl.STREAM_DRAW);
+    gl.enableVertexAttribArray(this.yOffset1Attrib);
+    gl.vertexAttribPointer(this.yOffset1Attrib, 1, gl.FLOAT, false, 0, 0);
 
     gl.uniformMatrix4fv(this.viewUni, false, view);
     gl.uniformMatrix4fv(this.projUni, false, proj);
