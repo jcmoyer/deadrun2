@@ -3,7 +3,7 @@ import { vec2, vec3, mat4 } from 'gl-matrix';
 
 export class Player {
   public cam: Camera = new Camera();
-  public pos: vec2;
+  private pos: vec2;
   public prevEye: vec3;
   public prevLook: vec3;
   public yaw = 0;

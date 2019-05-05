@@ -231,7 +231,7 @@ export default class Game {
 
     // TODO: clean this up by converting player worldpos to vec3...
     const playerWorld = vec3.create();
-    vec3.set(playerWorld, this.player.pos[0], 16, this.player.pos[1]);
+    vec3.set(playerWorld, this.player.getWorldX(), 16, this.player.getWorldZ());
 
     const playerMapX = toMapX(this.player.getWorldX());
     const playerMapY = toMapY(this.player.getWorldZ());
