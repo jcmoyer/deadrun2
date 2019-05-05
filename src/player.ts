@@ -21,13 +21,13 @@ export class Player {
     this.prevLook = vec3.clone(this.cam.getLook());
   }
 
-  getInterpolatedCameraPosition(alpha: number): vec3 {
+  private getInterpolatedCameraPosition(alpha: number): vec3 {
     const interp = vec3.create();
     vec3.lerp(interp, this.prevEye, this.cam.getEye(), alpha);
     return interp;
   }
 
-  getInterpolatedCameraLook(alpha: number): vec3 {
+  private getInterpolatedCameraLook(alpha: number): vec3 {
     const interp = vec3.create();
     vec3.lerp(interp, this.prevLook, this.cam.getLook(), alpha);
     return interp;
