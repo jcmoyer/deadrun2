@@ -4,9 +4,10 @@ import { buildProgram, loadTexture } from './glutil';
 import { AssetManager } from './assetmanager';
 import { Death, DeathRenderer } from './death';
 import { Player } from './player';
-import { Tilemap, Tile, SOLID, FLOOR, DEATH, SPAWN, EXIT } from './tilemap';
+import { DEATH } from './tilemap';
 import ExitEmitter from './exitemitter';
-import { TILE_SIZE, HALF_TILE, toMapX, toMapY } from './level';
+import { TILE_SIZE, toMapX, toMapY, Level } from './level';
+import LevelRenderer from './levelrenderer';
 
 import leveldata from "./leveldata";
 
@@ -33,409 +34,6 @@ uniform highp float color_mix;
 
 void main() {
   gl_FragColor = mix(texture2D(screentexture, f_texcoord), color, color_mix);
-}
-`;
-
-interface LevelObject {
-  text: string;
-  enableFog: boolean;
-  fogDensity?: number;
-  fogColor: number[];
-  floor: string;
-  wall: string;
-  music?: string;
-}
-
-enum Direction {
-  right, up, left, down
-}
-
-function isSpawn(s: string) {
-  return s === 'P';
-}
-
-function isWall(s: string) {
-  return s === '#';
-}
-
-function isFloor(s: string) {
-  return s === '_' || s === 'D' || s === 'P';
-}
-
-function isDeath(s: string) {
-  return s === 'D';
-}
-
-function isExit(s: string) {
-  return s === 'E';
-}
-
-function loadTilemap(data: string) {
-  data = data.trim();
-  const lines = data.split(/\n/g);
-
-  const width = lines[0].length;
-  const height = lines.length;
-
-  const tilemap = new Tilemap(width, height);
-
-  for (let y = 0; y < lines.length; ++y) {
-    const line = lines[y];
-    if (line.length !== width) {
-      // TODO subclass error
-      throw new Error('FATAL: Inconsistent map width');
-    }
-
-    for (let x = 0; x < line.length; ++x) {
-      if (isWall(lines[y][x])) {
-        tilemap.setFlag(x, y, SOLID);
-      }
-
-      if (isSpawn(lines[y][x])) {
-        tilemap.setFlag(x, y, SPAWN);
-      }
-
-      if (isFloor(lines[y][x])) {
-        tilemap.setFlag(x, y, FLOOR);
-      }
-
-      if (isDeath(lines[y][x])) {
-        tilemap.setFlag(x, y, DEATH);
-      }
-
-      if (isExit(lines[y][x])) {
-        tilemap.setFlag(x, y, EXIT);
-      }
-    }
-  }
-
-  return tilemap;
-}
-
-class Wall {
-  public originX: number;
-  public originY: number;
-  public originZ: number;
-  /**
-   * Direction the wall faces (i.e. the direction of the wall's normal)
-   */
-  public direction: Direction;
-}
-
-class Floor {
-  public originX: number;
-  public originY: number;
-  public originZ: number;
-}
-
-class LevelGeometry {
-  public walls: Array<Wall>;
-  public floors: Array<Floor>;
-  public exitFloor: Floor;
-}
-
-function generateSparseGeometry(tilemap: Tilemap) {
-  let geo = new LevelGeometry();
-  let walls = new Array<Wall>();
-  let floors = new Array<Floor>();
-
-  for (let y = 0; y < tilemap.getHeight(); ++y) {
-    for (let x = 0; x < tilemap.getWidth(); ++x) {
-      const t = tilemap.getTile(x, y);
-
-      // generate border walls
-      if (!tilemap.inBounds(x - 1, y) || tilemap.getFlag(x - 1, y) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE - HALF_TILE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE;
-        w.direction = Direction.right;
-        walls.push(w);
-      }
-
-      if (!tilemap.inBounds(x + 1, y) || tilemap.getFlag(x + 1, y) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE + HALF_TILE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE;
-        w.direction = Direction.left;
-        walls.push(w);
-      }
-
-      if (!tilemap.inBounds(x, y - 1) || tilemap.getFlag(x, y - 1) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE - HALF_TILE;
-        w.direction = Direction.down;
-        walls.push(w);
-      }
-
-      if (!tilemap.inBounds(x, y + 1) || tilemap.getFlag(x, y + 1) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE + HALF_TILE;
-        w.direction = Direction.up;
-        walls.push(w);
-      }
-
-      if (tilemap.getFlag(x, y) & FLOOR) {
-        const f = new Floor();
-        f.originX = x * TILE_SIZE;
-        f.originY = 0;
-        f.originZ = y * TILE_SIZE;
-        floors.push(f);
-      }
-
-      if (tilemap.getFlag(x, y) & EXIT) {
-        const f = new Floor();
-        f.originX = x * TILE_SIZE;
-        f.originY = 0;
-        f.originZ = y * TILE_SIZE;
-        geo.exitFloor = f;
-      }
-    }
-  }
-
-  geo.walls = walls;
-  geo.floors = floors;
-  return geo;
-}
-
-class LevelGeometryBuffers {
-  public wallVertices: Float32Array;
-  public wallTexCoords: Float32Array;
-  public wallShades: Float32Array;
-
-  public floorVertices: Float32Array;
-  public floorTexCoords: Float32Array;
-
-  public exitFloorVertices: Float32Array;
-  public exitFloorTexCoords: Float32Array;
-
-  constructor(wallCount: number, floorCount: number) {
-    this.wallVertices = new Float32Array(wallCount * 6 * 3);
-    this.wallTexCoords = new Float32Array(wallCount * 6 * 2);
-    this.wallShades = new Float32Array(wallCount * 6);
-    this.floorVertices = new Float32Array(floorCount * 6 * 3);
-    this.floorTexCoords = new Float32Array(floorCount * 6 * 2);
-
-    this.exitFloorVertices = new Float32Array(1 * 6 * 3);
-    this.exitFloorTexCoords = new Float32Array(1 * 6 * 2);
-  }
-}
-
-function condenseGeometry(geo: LevelGeometry) {
-  const buffers = new LevelGeometryBuffers(geo.walls.length, geo.floors.length);
-
-  let vertexOffset = 0;
-  let texCoordOffset = 0;
-  let shadeOffset = 0;
-  let floorVOffset = 0;
-
-  buffers.exitFloorVertices.set([
-    geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
-    geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
-    geo.exitFloor.originX + HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
-
-    geo.exitFloor.originX + HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ - HALF_TILE,
-    geo.exitFloor.originX - HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
-    geo.exitFloor.originX + HALF_TILE, geo.exitFloor.originY, geo.exitFloor.originZ + HALF_TILE,
-  ]);
-  buffers.exitFloorTexCoords.set([
-    0, 0,
-    0, 1,
-    1, 0,
-
-    1, 0,
-    0, 1,
-    1, 1
-  ]);
-
-  for (let floor of geo.floors) {
-    buffers.floorVertices.set([
-      floor.originX - HALF_TILE, floor.originY, floor.originZ - HALF_TILE,
-      floor.originX - HALF_TILE, floor.originY, floor.originZ + HALF_TILE,
-      floor.originX + HALF_TILE, floor.originY, floor.originZ - HALF_TILE,
-
-      floor.originX + HALF_TILE, floor.originY, floor.originZ - HALF_TILE,
-      floor.originX - HALF_TILE, floor.originY, floor.originZ + HALF_TILE,
-      floor.originX + HALF_TILE, floor.originY, floor.originZ + HALF_TILE,
-    ], floorVOffset);
-    floorVOffset += 6 * 3;
-
-    buffers.floorTexCoords.set([
-      0, 0,
-      0, 1,
-      1, 0,
-
-      1, 0,
-      0, 1,
-      1, 1
-    ], texCoordOffset);
-    texCoordOffset += 6 * 2;
-  }
-
-  texCoordOffset = 0;
-
-  for (let wall of geo.walls) {
-    buffers.wallTexCoords.set([
-      0, 0,
-      0, 1,
-      1, 0,
-
-      1, 0,
-      0, 1,
-      1, 1
-    ], texCoordOffset);
-
-    if (wall.direction == Direction.down) {
-      buffers.wallVertices.set([
-        wall.originX - HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX - HALF_TILE, wall.originY, wall.originZ,
-        wall.originX + HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-
-        wall.originX + HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX - HALF_TILE, wall.originY, wall.originZ,
-        wall.originX + HALF_TILE, wall.originY, wall.originZ,
-      ], vertexOffset);
-    }
-
-    if (wall.direction == Direction.up) {
-      buffers.wallVertices.set([
-        wall.originX + HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX + HALF_TILE, wall.originY, wall.originZ,
-        wall.originX - HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-
-        wall.originX - HALF_TILE, wall.originY + TILE_SIZE, wall.originZ,
-        wall.originX + HALF_TILE, wall.originY, wall.originZ,
-        wall.originX - HALF_TILE, wall.originY, wall.originZ,
-      ], vertexOffset);
-    }
-
-    if (wall.direction == Direction.left) {
-      buffers.wallVertices.set([
-        wall.originX, wall.originY + TILE_SIZE, wall.originZ - HALF_TILE,
-        wall.originX, wall.originY, wall.originZ - HALF_TILE,
-        wall.originX, wall.originY + TILE_SIZE, wall.originZ + HALF_TILE,
-
-        wall.originX, wall.originY + TILE_SIZE, wall.originZ + HALF_TILE,
-        wall.originX, wall.originY, wall.originZ - HALF_TILE,
-        wall.originX, wall.originY, wall.originZ + HALF_TILE,
-      ], vertexOffset);
-    }
-
-    if (wall.direction == Direction.right) {
-      buffers.wallVertices.set([
-        wall.originX, wall.originY + TILE_SIZE, wall.originZ + HALF_TILE,
-        wall.originX, wall.originY, wall.originZ + HALF_TILE,
-        wall.originX, wall.originY + TILE_SIZE, wall.originZ - HALF_TILE,
-
-        wall.originX, wall.originY + TILE_SIZE, wall.originZ - HALF_TILE,
-        wall.originX, wall.originY, wall.originZ + HALF_TILE,
-        wall.originX, wall.originY, wall.originZ - HALF_TILE,
-      ], vertexOffset);
-    }
-
-    let shadeAmount = 0.6;
-    if (wall.direction == Direction.down) {
-      shadeAmount = 1;
-    } else if (wall.direction == Direction.left) {
-      shadeAmount = 0.8;
-    } else if (wall.direction == Direction.right) {
-      shadeAmount = 0.7;
-    }
-
-    buffers.wallShades.set([
-      shadeAmount, shadeAmount, shadeAmount, shadeAmount, shadeAmount, shadeAmount
-    ], shadeOffset);
-
-    vertexOffset += 6 * 3;
-    shadeOffset += 6;
-    texCoordOffset += 6 * 2;
-  }
-
-  return buffers;
-}
-
-class Level {
-  public tilemap: Tilemap;
-  public enableFog: boolean;
-  public fogColor: number[];
-  public fogDensity: number;
-
-  public geometry: LevelGeometry;
-  public geometryBuffers: LevelGeometryBuffers;
-
-  public floor: string;
-  public wall: string;
-  public music?: string;
-
-  constructor(obj: LevelObject) {
-    this.tilemap = loadTilemap(obj.text);
-    this.geometry = generateSparseGeometry(this.tilemap);
-    this.geometryBuffers = condenseGeometry(this.geometry);
-
-    if (obj.fogColor.length !== 4) {
-      throw new Error('fogColor must contain 4 components');
-    }
-
-    if (obj.fogDensity === undefined) {
-      this.fogDensity = 0.03;
-    } else {
-      this.fogDensity = obj.fogDensity;
-    }
-
-    this.fogColor = obj.fogColor;
-    this.enableFog = obj.enableFog;
-
-    this.floor = obj.floor;
-    this.wall = obj.wall;
-    this.music = obj.music;
-  }
-}
-
-const levelVS = `
-attribute vec4  position;
-attribute vec2  texcoord;
-
-attribute float shade;
-
-uniform mat4 view;
-uniform mat4 projection;
-
-varying highp float f_shade;
-varying vec2        f_texcoord;
-
-
-void main() {
-  gl_Position = projection * view * position;
-  f_shade     = shade;
-  f_texcoord  = texcoord;
-}
-`;
-
-const levelFS = `
-varying highp float f_shade;
-varying highp vec2  f_texcoord;
-
-uniform sampler2D   wall_texture;
-uniform highp vec4  fog_color;
-uniform highp float fog_density;
-
-void main() {
-  highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
-  fog              = clamp(fog, 0.0, 1.0);
-
-  highp vec4 base_color = texture2D(wall_texture, f_texcoord);
-
-  // linear
-  //gl_FragColor = mix(base_color, fog_color, clamp(dist / 64.0, 0.0, 1.0));
-
-  // exponential
-  gl_FragColor = mix(fog_color, base_color, fog);
 }
 `;
 
@@ -487,18 +85,6 @@ export default class Game {
   private player: Player = new Player();
   private enemies: Death[];
 
-  private wallPosBuffer: WebGLBuffer;
-  private wallTexCoordBuffer: WebGLBuffer;
-  private wallShadeBuffer: WebGLBuffer;
-
-  private floorPosBuffer: WebGLBuffer;
-  private floorTexCoordBuffer: WebGLBuffer;
-
-  private exitPosBuffer: WebGLBuffer;
-  private exitTexCoordBuffer: WebGLBuffer;
-
-  private levelProg: WebGLProgram;
-
   private keyboard = new Map<string, boolean>();
   private havePointerLock = false;
 
@@ -506,10 +92,6 @@ export default class Game {
   private pendingUpdateTime = 0;
 
   private yawQueue = 0;
-
-  private wallTexture: WebGLTexture;
-  private floorTexture: WebGLTexture;
-  private exitTexture: WebGLTexture;
 
   private level: Level;
   private levelID: number = 0;
@@ -545,14 +127,7 @@ export default class Game {
   private orthoPosAttr: number;
   private orthoTexCoordAttr: number;
 
-  // TODO: move into level renderer
-  private levelProjUni: WebGLUniformLocation;
-  private levelViewUni: WebGLUniformLocation;
-  private levelFogColorUni: WebGLUniformLocation;
-  private levelFogDensityUni: WebGLUniformLocation;
-  private levelPositionAttr: number;
-  private levelTexCoordAttr: number;
-  private levelShadeAttr: number;
+  private levelRenderer: LevelRenderer;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -569,27 +144,8 @@ export default class Game {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    this.wallPosBuffer = gl.createBuffer();
-    this.wallTexCoordBuffer = gl.createBuffer();
-    this.wallShadeBuffer = gl.createBuffer();
-
-    this.floorPosBuffer = gl.createBuffer();
-    this.floorTexCoordBuffer = gl.createBuffer();
-
-    this.exitPosBuffer = gl.createBuffer();
-    this.exitTexCoordBuffer = gl.createBuffer();
-
-    // TODO: error handling
-    this.levelProg = buildProgram(this.gl, levelVS, levelFS);
-    this.levelProjUni = gl.getUniformLocation(this.levelProg, 'projection');
-    this.levelViewUni = gl.getUniformLocation(this.levelProg, 'view');
-    this.levelFogColorUni = gl.getUniformLocation(this.levelProg, 'fog_color');
-    this.levelFogDensityUni = gl.getUniformLocation(this.levelProg, 'fog_density');
-    this.levelPositionAttr = gl.getAttribLocation(this.levelProg, 'position');
-    this.levelTexCoordAttr = gl.getAttribLocation(this.levelProg, 'texcoord');
-    this.levelShadeAttr = gl.getAttribLocation(this.levelProg, 'shade');
-
-    this.exitTexture = this.textureCache.getTexture('exitfloor');
+    this.levelRenderer = new LevelRenderer(this.gl);
+    this.levelRenderer.setExitTexture(this.textureCache.getTexture('exitfloor'));
 
     this.deathRenderer = new DeathRenderer(gl);
     this.deathRenderer.setTexture(this.textureCache.getTexture('death'));
@@ -735,58 +291,16 @@ export default class Game {
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
 
-
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.useProgram(this.levelProg);
-    gl.uniformMatrix4fv(this.levelProjUni, false, this.projMatrix);
-    gl.uniformMatrix4fv(this.levelViewUni, false, this.player.getInterpolatedViewMatrix(alpha));
-    gl.uniform4fv(this.levelFogColorUni, this.level.fogColor);
-    gl.uniform1f(this.levelFogDensityUni, this.level.fogDensity);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.wallPosBuffer);
-    gl.enableVertexAttribArray(this.levelPositionAttr);
-    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.wallTexCoordBuffer);
-    gl.enableVertexAttribArray(this.levelTexCoordAttr);
-    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.wallShadeBuffer);
-    gl.enableVertexAttribArray(this.levelShadeAttr);
-    gl.vertexAttribPointer(this.levelShadeAttr, 1, gl.FLOAT, false, 0, 0);
-
-    gl.bindTexture(gl.TEXTURE_2D, this.wallTexture);
-
-    gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.wallVertices.length / 3);
-
-    // draw floors
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.floorPosBuffer);
-    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.floorTexCoordBuffer);
-    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
-
-    gl.disableVertexAttribArray(this.levelShadeAttr);
-
-    gl.bindTexture(gl.TEXTURE_2D, this.floorTexture);
-    gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.floorVertices.length / 3);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.exitPosBuffer);
-    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.exitTexCoordBuffer);
-    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
-    gl.bindTexture(gl.TEXTURE_2D, this.exitTexture);
-
-    gl.drawArrays(gl.TRIANGLES, 0, this.level.geometryBuffers.exitFloorVertices.length / 3);
-
+    const playerView = this.player.getInterpolatedViewMatrix(alpha);
+    this.levelRenderer.render(this.projMatrix, playerView);
+    
     for (let death of this.enemies) {
-      this.deathRenderer.render(death, this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
+      this.deathRenderer.render(death, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
     }
 
-    //
-    this.exitEmitter.render(this.player.getInterpolatedViewMatrix(alpha), this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
+    this.exitEmitter.render(playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -934,8 +448,8 @@ export default class Game {
 
     this.level = level;
 
-    this.wallTexture = this.textureCache.getTexture(level.wall);
-    this.floorTexture = this.textureCache.getTexture(level.floor);
+    this.levelRenderer.setWallTexture(this.textureCache.getTexture(level.wall));
+    this.levelRenderer.setFloorTexture(this.textureCache.getTexture(level.floor));
 
     const spawn = this.level.tilemap.getSpawnTile();
     this.player.setWorldPos(
@@ -974,22 +488,7 @@ export default class Game {
       this.level.fogColor[3]
     );
 
-    // fill geometry buffers
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.wallPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.wallVertices, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.wallTexCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.wallTexCoords, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.wallShadeBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.wallShades, gl.STATIC_DRAW);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.floorPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.floorVertices, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.floorTexCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.floorTexCoords, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.exitPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.exitFloorVertices, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.exitTexCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.level.geometryBuffers.exitFloorTexCoords, gl.STATIC_DRAW);
+    this.levelRenderer.setLevel(this.level);
 
     if (this.level.music) {
       this.stopMusic();
