@@ -17,8 +17,8 @@ export class Player {
   }
 
   beginUpdate() {
-    this.prevEye = vec3.clone(this.cam.getEye());
-    this.prevLook = vec3.clone(this.cam.getLook());
+    vec3.copy(this.prevEye, this.cam.getEye());
+    vec3.copy(this.prevLook, this.cam.getLook());
   }
 
   private getInterpolatedCameraPosition(alpha: number): vec3 {
