@@ -3,14 +3,14 @@ import { vec2, vec3, mat4 } from 'gl-matrix';
 
 export class Player {
   public cam: Camera = new Camera();
-  private pos: vec2;
+  private pos: vec3;
   public prevEye: vec3;
   public prevLook: vec3;
   public yaw = 0;
   public dead = false;
 
   constructor() {
-    this.pos = vec2.create();
+    this.pos = vec3.create();
     this.syncCamToMe();
     this.prevEye = vec3.clone(this.cam.getEye());
     this.prevLook = vec3.clone(this.cam.getLook());
@@ -60,11 +60,11 @@ export class Player {
 
   private syncToCamPos() {
     this.pos[0] = this.cam.getEye()[0];
-    this.pos[1] = this.cam.getEye()[2];
+    this.pos[2] = this.cam.getEye()[2];
   }
 
   private syncCamToMe() {
-    this.cam.setEye(this.pos[0], 16, this.pos[1]);
+    this.cam.setEye(this.pos[0], 16, this.pos[2]);
   }
 
   getWorldX() {
@@ -72,12 +72,12 @@ export class Player {
   }
 
   getWorldZ() {
-    return this.pos[1];
+    return this.pos[2];
   }
 
   setWorldPos(x: number, z: number) {
     this.pos[0] = x;
-    this.pos[1] = z;
+    this.pos[2] = z;
     this.syncCamToMe();
   }
 
