@@ -81,43 +81,6 @@ function generateSparseGeometry(tilemap: Tilemap) {
     for (let x = 0; x < tilemap.getWidth(); ++x) {
       const t = tilemap.getTile(x, y);
 
-      // generate border walls
-      if (!tilemap.inBounds(x - 1, y) || tilemap.getFlag(x - 1, y) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE - HALF_TILE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE;
-        w.direction = Direction.right;
-        walls.push(w);
-      }
-
-      if (!tilemap.inBounds(x + 1, y) || tilemap.getFlag(x + 1, y) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE + HALF_TILE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE;
-        w.direction = Direction.left;
-        walls.push(w);
-      }
-
-      if (!tilemap.inBounds(x, y - 1) || tilemap.getFlag(x, y - 1) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE - HALF_TILE;
-        w.direction = Direction.down;
-        walls.push(w);
-      }
-
-      if (!tilemap.inBounds(x, y + 1) || tilemap.getFlag(x, y + 1) & SOLID) {
-        const w = new Wall();
-        w.originX = x * TILE_SIZE;
-        w.originY = 0;
-        w.originZ = y * TILE_SIZE + HALF_TILE;
-        w.direction = Direction.up;
-        walls.push(w);
-      }
-
       if (tilemap.getFlag(x, y) & FLOOR) {
         const f = new Floor();
         f.originX = x * TILE_SIZE;
@@ -132,6 +95,45 @@ function generateSparseGeometry(tilemap: Tilemap) {
         f.originY = 0;
         f.originZ = y * TILE_SIZE;
         geo.exitFloor = f;
+      }
+
+      // generate border walls only for tiles that are floors or exits
+      if (t.flags & FLOOR || t.flags & EXIT) {
+        if (!tilemap.inBounds(x - 1, y) || tilemap.getFlag(x - 1, y) & SOLID) {
+          const w = new Wall();
+          w.originX = x * TILE_SIZE - HALF_TILE;
+          w.originY = 0;
+          w.originZ = y * TILE_SIZE;
+          w.direction = Direction.right;
+          walls.push(w);
+        }
+
+        if (!tilemap.inBounds(x + 1, y) || tilemap.getFlag(x + 1, y) & SOLID) {
+          const w = new Wall();
+          w.originX = x * TILE_SIZE + HALF_TILE;
+          w.originY = 0;
+          w.originZ = y * TILE_SIZE;
+          w.direction = Direction.left;
+          walls.push(w);
+        }
+
+        if (!tilemap.inBounds(x, y - 1) || tilemap.getFlag(x, y - 1) & SOLID) {
+          const w = new Wall();
+          w.originX = x * TILE_SIZE;
+          w.originY = 0;
+          w.originZ = y * TILE_SIZE - HALF_TILE;
+          w.direction = Direction.down;
+          walls.push(w);
+        }
+
+        if (!tilemap.inBounds(x, y + 1) || tilemap.getFlag(x, y + 1) & SOLID) {
+          const w = new Wall();
+          w.originX = x * TILE_SIZE;
+          w.originY = 0;
+          w.originZ = y * TILE_SIZE + HALF_TILE;
+          w.direction = Direction.up;
+          walls.push(w);
+        }
       }
     }
   }
