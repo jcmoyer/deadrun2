@@ -3,6 +3,7 @@ import * as glutil from './glutil';
 import { Player } from './player';
 import { Tilemap } from './tilemap';
 import { toMapX, toMapY } from './level';
+import GridWalker from './gridwalker';
 
 const deathVS = `
 attribute vec4 position;
@@ -46,6 +47,8 @@ void main() {
 }
 `;
 
+const gridWalker = new GridWalker();
+
 export class Death {
   public prevWorldPos: vec3;
   public worldPos: vec3;
@@ -66,42 +69,49 @@ export class Death {
   update(player: Player, tilemap: Tilemap) {
     this.beginUpdate();
 
-    const px = player.getWorldX();
-    const py = player.getWorldZ();
-    const dx = px - this.worldPos[0];
-    const dy = py - this.worldPos[2];
-    const dir = vec3.create();
-    vec3.set(dir, dx, 0, dy);
-    vec3.normalize(dir, dir);
-
     if (this.awake) {
-      vec3.set(this.velocity, px - this.worldPos[0], 0, py - this.worldPos[2]);
-      vec3.normalize(this.velocity, this.velocity);
-      vec3.scale(this.velocity, this.velocity, 0.2);
-      vec3.add(this.worldPos, this.worldPos, this.velocity);
+      this.chasePlayer(player);
     } else {
-      const ray = vec3.clone(dir);
-      vec3.scale(ray, ray, 16);
-      const amt = vec3.clone(ray);
-      vec3.copy(ray, this.worldPos);
-      for (let i = 0; i < 12; ++i) {
-        const rmx = toMapX(ray[0]);
-        const rmy = toMapY(ray[2]);
-        const pmx = toMapX(player.getWorldX());
-        const pmy = toMapY(player.getWorldZ());
-
-        if (tilemap.isSolid(rmx, rmy)) {
-          // hit a wall
-          break;
-        } else if (rmx === pmx && rmy === pmy) {
-          // hit player tile
-          this.wake();
-        }
-
-        vec3.add(ray, ray, amt);
+      if (this.canSeePlayer(player, tilemap)) {
+        this.wake();
       }
     }
+
     this.worldPos[1] = 16 + Math.sin(Date.now() / 1000) * 2;
+  }
+
+  private chasePlayer(player: Player) {
+    vec3.set(
+      this.velocity,
+      player.getWorldX() - this.getWorldX(),
+      0,
+      player.getWorldZ() - this.getWorldZ()
+    );
+    vec3.normalize(this.velocity, this.velocity);
+    vec3.scale(this.velocity, this.velocity, 0.2);
+    vec3.add(this.worldPos, this.worldPos, this.velocity);
+  }
+
+  private canSeePlayer(player: Player, tilemap: Tilemap) {
+    const deathMapX = toMapX(this.getWorldX());
+    const deathMapY = toMapY(this.getWorldZ());
+    const playerMapX = toMapX(player.getWorldX());
+    const playerMapY = toMapY(player.getWorldZ());
+
+    gridWalker.setStartPoint(deathMapX, deathMapY);
+    gridWalker.setEndPoint(playerMapX, playerMapY);
+    gridWalker.begin();
+
+    while (!gridWalker.isFinished() && gridWalker.getSteps() < 6) {
+      gridWalker.step();
+      if (tilemap.isSolid(gridWalker.getX(), gridWalker.getY())) {
+        return false;
+      } else if (gridWalker.getX() === playerMapX && gridWalker.getY() === playerMapY) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   setWorldPos(x: number, z: number) {
