@@ -2,6 +2,7 @@ import { Level, HALF_TILE, TILE_SIZE } from "./level";
 import { buildProgram } from "./glutil";
 import { mat4 } from "gl-matrix";
 import { Tilemap, SOLID, FLOOR, EXIT } from "./tilemap";
+import { fogFragmentShader } from './shaderfog';
 
 const levelVS = `
 attribute vec4  position;
@@ -24,25 +25,16 @@ void main() {
 `;
 
 const levelFS = `
+${fogFragmentShader}
+
 varying highp float f_shade;
 varying highp vec2  f_texcoord;
 
 uniform sampler2D   wall_texture;
-uniform highp vec4  fog_color;
-uniform highp float fog_density;
 
 void main() {
-  highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
-  fog              = clamp(fog, 0.0, 1.0);
-
   highp vec4 base_color = texture2D(wall_texture, f_texcoord);
-
-  // linear
-  //gl_FragColor = mix(base_color, fog_color, clamp(dist / 64.0, 0.0, 1.0));
-
-  // exponential
-  gl_FragColor = mix(fog_color, base_color, fog);
+  gl_FragColor = mix_fog(base_color);
 }
 `;
 

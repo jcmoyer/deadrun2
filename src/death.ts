@@ -4,6 +4,7 @@ import { Player } from './player';
 import { Tilemap } from './tilemap';
 import { toMapX, toMapY } from './level';
 import GridWalker from './gridwalker';
+import { fogFragmentShader } from './shaderfog';
 
 const deathVS = `
 attribute vec4 position;
@@ -28,21 +29,16 @@ void main() {
 `;
 
 const deathFS = `
-uniform sampler2D death_texture;
+${fogFragmentShader}
 
-uniform highp vec4  fog_color;
-uniform highp float fog_density;
+uniform sampler2D death_texture;
 
 varying highp vec2 f_texcoord;
 
 void main() {
-  highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
-  fog              = clamp(fog, 0.0, 1.0);
-
   highp vec4 base_color = texture2D(death_texture, f_texcoord);
 
-  gl_FragColor = mix(fog_color, base_color, fog);
+  gl_FragColor = mix_fog(base_color);
   gl_FragColor.a = base_color.a;
 }
 `;

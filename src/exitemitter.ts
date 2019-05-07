@@ -1,5 +1,6 @@
 import { buildProgram } from './glutil';
 import { vec3, mat4 } from 'gl-matrix';
+import { fogFragmentShader } from './shaderfog';
 
 const emitterVS = `
 attribute vec4 base_position;
@@ -40,17 +41,11 @@ void main() {
 `;
 
 const emitterFS = `
-uniform highp vec4  fog_color;
-uniform highp float fog_density;
+${fogFragmentShader}
 
 void main() {
-  highp float dist = gl_FragCoord.z / gl_FragCoord.w;
-  highp float fog  = 1.0 / exp(dist * fog_density) * 2.0;
-  fog              = clamp(fog, 0.0, 1.0);
-
   highp vec4 base_color = vec4(48.0 / 255.0, 104.0 / 255.0, 216.0 / 255.0, 1.0);
-
-  gl_FragColor = mix(fog_color, base_color, fog);
+  gl_FragColor = mix_fog(base_color);
 }
 `;
 
