@@ -99,7 +99,7 @@ export default class GridWalker {
   }
 
   private stepYDominant() {
-    let ideal = this.x0 + (this.currentY - this.y0) * this.slope;
+    const ideal = this.x0 + (this.currentY - this.y0) * this.slope;
     if ((ideal - this.currentX) * this.stepX >= this.max) {
       this.currentX += this.stepX;
     } else {
