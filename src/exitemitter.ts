@@ -1,53 +1,5 @@
-import { buildProgram } from './glutil';
 import { vec3, mat4 } from 'gl-matrix';
-import { fogFragmentShader } from './shaderfog';
-
-const emitterVS = `
-attribute vec4 base_position;
-attribute highp float y_offset_0;
-attribute highp float y_offset_1;
-attribute highp float rotation;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
-uniform highp float interpolation;
-
-void main() {
-  vec4 interp_pos = base_position;
-  interp_pos.y += mix(y_offset_0, y_offset_1, interpolation);
-
-  // translate the model matrix relative to this vertex instead of the emitter so that
-  // rotations are about the particle center rather than the emitter center
-  vec4 model_offset = vec4(
-    cos(rotation) * 8.0,
-    0,
-    sin(rotation) * 8.0,
-    0
-  );
-
-  mat4 model_t = model;
-  model_t[3] += model_offset;
-
-  // compute the model-view matrix using the offset model matrix and discard the rotation submatrix
-  mat4 mv = view * model_t;
-  mv[0] = vec4(1, 0, 0, 0);
-  mv[1] = vec4(0, 1, 0, 0);
-  mv[2] = vec4(0, 0, 1, 0);
-
-  gl_Position = projection * mv * interp_pos;
-}
-`;
-
-const emitterFS = `
-${fogFragmentShader}
-
-void main() {
-  highp vec4 base_color = vec4(48.0 / 255.0, 104.0 / 255.0, 216.0 / 255.0, 1.0);
-  gl_FragColor = mix_fog(base_color);
-}
-`;
+import ExitEmitterShader from './shaders/exitemitter';
 
 export default class ExitEmitter {
   private gl: WebGLRenderingContext;
@@ -59,38 +11,16 @@ export default class ExitEmitter {
   private yOffsets: Float32Array;
   private prevYOffsets: Float32Array;
   private rotationBuffer: WebGLBuffer;
-  private program: WebGLProgram;
+  private shader: ExitEmitterShader;
   private worldPos: vec3;
   private particleCount = 30;
   private emitHeight = 24;
-
-  private posAttrib: number;
-  private rotationAttrib: number;
-  private yOffset0Attrib: number;
-  private yOffset1Attrib: number;
-  private viewUni: WebGLUniformLocation;
-  private projUni: WebGLUniformLocation;
-  private interpolationUni: WebGLUniformLocation;
-  private fogColorUni: WebGLUniformLocation;
-  private fogDensityUni: WebGLUniformLocation;
-  private modelUni: WebGLUniformLocation;
 
   private model: mat4 = mat4.create();
 
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl;
-    this.program = buildProgram(gl, emitterVS, emitterFS);
-    this.rotationAttrib = gl.getAttribLocation(this.program, 'rotation');
-    this.posAttrib = gl.getAttribLocation(this.program, 'base_position');
-    this.yOffset0Attrib = gl.getAttribLocation(this.program, 'y_offset_0');
-    this.yOffset1Attrib = gl.getAttribLocation(this.program, 'y_offset_1');
-    this.modelUni = gl.getUniformLocation(this.program, 'model');
-    this.viewUni = gl.getUniformLocation(this.program, 'view');
-    this.projUni = gl.getUniformLocation(this.program, 'projection');
-    this.interpolationUni = gl.getUniformLocation(this.program, 'interpolation');
-    this.fogColorUni = gl.getUniformLocation(this.program, 'fog_color');
-    this.fogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
-
+    this.shader = new ExitEmitterShader(gl);
     this.yOffsets = new Float32Array(4 * this.particleCount);
     this.prevYOffsets = new Float32Array(4 * this.particleCount);
     this.basePositions = new Float32Array(3 * 4 * this.particleCount);
@@ -201,33 +131,33 @@ export default class ExitEmitter {
 
   render(view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
-    gl.useProgram(this.program);
+    this.shader.use();
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.basePosBuffer);
-    gl.enableVertexAttribArray(this.posAttrib);
-    gl.vertexAttribPointer(this.posAttrib, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aBasePosition);
+    gl.vertexAttribPointer(this.shader.aBasePosition, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.rotationBuffer);
-    gl.enableVertexAttribArray(this.rotationAttrib);
-    gl.vertexAttribPointer(this.rotationAttrib, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aRotation);
+    gl.vertexAttribPointer(this.shader.aRotation, 1, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.yOffset0Buffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.prevYOffsets, gl.STREAM_DRAW);
-    gl.enableVertexAttribArray(this.yOffset0Attrib);
-    gl.vertexAttribPointer(this.yOffset0Attrib, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aYOffset0);
+    gl.vertexAttribPointer(this.shader.aYOffset0, 1, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.yOffset1Buffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.yOffsets, gl.STREAM_DRAW);
-    gl.enableVertexAttribArray(this.yOffset1Attrib);
-    gl.vertexAttribPointer(this.yOffset1Attrib, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aYOffset1);
+    gl.vertexAttribPointer(this.shader.aYOffset1, 1, gl.FLOAT, false, 0, 0);
 
-    gl.uniformMatrix4fv(this.viewUni, false, view);
-    gl.uniformMatrix4fv(this.projUni, false, proj);
-    gl.uniform1f(this.interpolationUni, alpha);
-    gl.uniform4fv(this.fogColorUni, fogColor);
-    gl.uniform1f(this.fogDensityUni, fogDensity);
+    gl.uniformMatrix4fv(this.shader.uView, false, view);
+    gl.uniformMatrix4fv(this.shader.uProjection, false, proj);
+    gl.uniform1f(this.shader.uInterpolation, alpha);
+    gl.uniform4fv(this.shader.uFogColor, fogColor);
+    gl.uniform1f(this.shader.uFogDensity, fogDensity);
 
-    gl.uniformMatrix4fv(this.modelUni, false, this.model);
+    gl.uniformMatrix4fv(this.shader.uModel, false, this.model);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indicesBuffer);
 

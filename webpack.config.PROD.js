@@ -7,7 +7,7 @@ module.exports = {
   entry: './src/main.ts',
 
   resolve: {
-    extensions: ['.ts']
+    extensions: ['.ts', '.js']
   },
 
   module: {

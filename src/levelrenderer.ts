@@ -1,42 +1,7 @@
 import { Level, HALF_TILE, TILE_SIZE } from "./level";
-import { buildProgram } from "./glutil";
 import { mat4 } from "gl-matrix";
 import { Tilemap, SOLID, FLOOR, EXIT } from "./tilemap";
-import { fogFragmentShader } from './shaderfog';
-
-const levelVS = `
-attribute vec4  position;
-attribute vec2  texcoord;
-
-attribute float shade;
-
-uniform mat4 view;
-uniform mat4 projection;
-
-varying highp float f_shade;
-varying vec2        f_texcoord;
-
-
-void main() {
-  gl_Position = projection * view * position;
-  f_shade     = shade;
-  f_texcoord  = texcoord;
-}
-`;
-
-const levelFS = `
-${fogFragmentShader}
-
-varying highp float f_shade;
-varying highp vec2  f_texcoord;
-
-uniform sampler2D   wall_texture;
-
-void main() {
-  highp vec4 base_color = texture2D(wall_texture, f_texcoord);
-  gl_FragColor = mix_fog(base_color);
-}
-`;
+import LevelShader from './shaders/level';
 
 enum Direction {
   right, up, left, down
@@ -293,16 +258,7 @@ function condenseGeometry(geo: LevelGeometry) {
 
 export default class LevelRenderer {
   private gl: WebGLRenderingContext;
-  private program: WebGLProgram;
-
-  // Shader input locations
-  private levelProjUni: WebGLUniformLocation;
-  private levelViewUni: WebGLUniformLocation;
-  private levelFogColorUni: WebGLUniformLocation;
-  private levelFogDensityUni: WebGLUniformLocation;
-  private levelPositionAttr: number;
-  private levelTexCoordAttr: number;
-  private levelShadeAttr: number;
+  private shader: LevelShader;
   
   // Level geometry storage
   private wallPosBuffer: WebGLBuffer;
@@ -323,16 +279,7 @@ export default class LevelRenderer {
 
   constructor(gl: WebGLRenderingContext) {
     this.gl = gl;
-
-    // TODO: error handling
-    this.program = buildProgram(this.gl, levelVS, levelFS);
-    this.levelProjUni = gl.getUniformLocation(this.program, 'projection');
-    this.levelViewUni = gl.getUniformLocation(this.program, 'view');
-    this.levelFogColorUni = gl.getUniformLocation(this.program, 'fog_color');
-    this.levelFogDensityUni = gl.getUniformLocation(this.program, 'fog_density');
-    this.levelPositionAttr = gl.getAttribLocation(this.program, 'position');
-    this.levelTexCoordAttr = gl.getAttribLocation(this.program, 'texcoord');
-    this.levelShadeAttr = gl.getAttribLocation(this.program, 'shade');
+    this.shader = new LevelShader(gl);
 
     this.wallPosBuffer = gl.createBuffer();
     this.wallTexCoordBuffer = gl.createBuffer();
@@ -389,24 +336,24 @@ export default class LevelRenderer {
     const gl = this.gl;
 
     // Set up shared render state
-    gl.useProgram(this.program);
-    gl.uniformMatrix4fv(this.levelProjUni, false, proj);
-    gl.uniformMatrix4fv(this.levelViewUni, false, view);
-    gl.uniform4fv(this.levelFogColorUni, this.level.fogColor);
-    gl.uniform1f(this.levelFogDensityUni, this.level.fogDensity);
+    this.shader.use();
+    gl.uniformMatrix4fv(this.shader.uProjection, false, proj);
+    gl.uniformMatrix4fv(this.shader.uView, false, view);
+    gl.uniform4fv(this.shader.uFogColor, this.level.fogColor);
+    gl.uniform1f(this.shader.uFogDensity, this.level.fogDensity);
 
     // Walls
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallPosBuffer);
-    gl.enableVertexAttribArray(this.levelPositionAttr);
-    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aPosition);
+    gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallTexCoordBuffer);
-    gl.enableVertexAttribArray(this.levelTexCoordAttr);
-    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aTexcoord);
+    gl.vertexAttribPointer(this.shader.aTexcoord, 2, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.wallShadeBuffer);
-    gl.enableVertexAttribArray(this.levelShadeAttr);
-    gl.vertexAttribPointer(this.levelShadeAttr, 1, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(this.shader.aShade);
+    gl.vertexAttribPointer(this.shader.aShade, 1, gl.FLOAT, false, 0, 0);
 
     gl.bindTexture(gl.TEXTURE_2D, this.wallTexture);
 
@@ -414,12 +361,12 @@ export default class LevelRenderer {
 
     // Floors
     gl.bindBuffer(gl.ARRAY_BUFFER, this.floorPosBuffer);
-    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.floorTexCoordBuffer);
-    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.shader.aTexcoord, 2, gl.FLOAT, false, 0, 0);
 
-    gl.disableVertexAttribArray(this.levelShadeAttr);
+    gl.disableVertexAttribArray(this.shader.aShade);
 
     gl.bindTexture(gl.TEXTURE_2D, this.floorTexture);
     
@@ -427,10 +374,10 @@ export default class LevelRenderer {
 
     // Exit
     gl.bindBuffer(gl.ARRAY_BUFFER, this.exitPosBuffer);
-    gl.vertexAttribPointer(this.levelPositionAttr, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.exitTexCoordBuffer);
-    gl.vertexAttribPointer(this.levelTexCoordAttr, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(this.shader.aTexcoord, 2, gl.FLOAT, false, 0, 0);
 
     gl.bindTexture(gl.TEXTURE_2D, this.exitTexture);
 

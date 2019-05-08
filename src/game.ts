@@ -10,32 +10,7 @@ import { TILE_SIZE, toMapX, toMapY, Level } from './level';
 import LevelRenderer from './levelrenderer';
 
 import leveldata from "./leveldata";
-
-const orthoQuadVS = `
-attribute vec4 position;
-attribute vec2 texcoord;
-
-uniform mat4 projection;
-
-varying highp vec2 f_texcoord;
-
-void main() {
-  gl_Position = projection * position;
-  f_texcoord = texcoord;
-}
-`;
-
-const orthoQuadFS = `
-varying highp vec2 f_texcoord;
-uniform sampler2D screentexture;
-
-uniform highp vec4  color;
-uniform highp float color_mix;
-
-void main() {
-  gl_FragColor = mix(texture2D(screentexture, f_texcoord), color, color_mix);
-}
-`;
+import ScreenQuadShader from './shaders/screenquad';
 
 class GLTextureCache {
   private gl: WebGLRenderingContext;
@@ -110,7 +85,7 @@ export default class Game {
   private fbDepthBuffer: WebGLRenderbuffer;
 
   private orthoProj: mat4;
-  private orthoProgram: WebGLProgram;
+  private orthoShader: ScreenQuadShader;
   private orthoBuffer: WebGLBuffer;
 
   private fadeTimer: number = 2000;
@@ -120,12 +95,6 @@ export default class Game {
 
   private textureCache: GLTextureCache;
   private chantPlayer: ChantPlayer;
-
-  private orthoProjUni: WebGLUniformLocation;
-  private orthoColorUni: WebGLUniformLocation;
-  private orthoColorMixUni: WebGLUniformLocation;
-  private orthoPosAttr: number;
-  private orthoTexCoordAttr: number;
 
   private levelRenderer: LevelRenderer;
 
@@ -159,12 +128,7 @@ export default class Game {
     this.fb = gl.createFramebuffer();
     this.createFBTexture();
 
-    this.orthoProgram = buildProgram(gl, orthoQuadVS, orthoQuadFS);
-    this.orthoProjUni = gl.getUniformLocation(this.orthoProgram, 'projection');
-    this.orthoColorUni = gl.getUniformLocation(this.orthoProgram, 'color');
-    this.orthoColorMixUni = gl.getUniformLocation(this.orthoProgram, 'color_mix');
-    this.orthoPosAttr = gl.getAttribLocation(this.orthoProgram, 'position');
-    this.orthoTexCoordAttr = gl.getAttribLocation(this.orthoProgram, 'texcoord');
+    this.orthoShader = new ScreenQuadShader(gl);
 
     this.orthoBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
@@ -304,16 +268,16 @@ export default class Game {
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    gl.useProgram(this.orthoProgram);
-    gl.uniformMatrix4fv(this.orthoProjUni, false, this.orthoProj);
-    gl.uniform4fv(this.orthoColorUni, this.fadeColor);
-    gl.uniform1f(this.orthoColorMixUni, this.getFadeAmount());
+    this.orthoShader.use();
+    gl.uniformMatrix4fv(this.orthoShader.uProjection, false, this.orthoProj);
+    gl.uniform4fv(this.orthoShader.uColor, this.fadeColor);
+    gl.uniform1f(this.orthoShader.uColorMix, this.getFadeAmount());
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.orthoBuffer);
-    gl.enableVertexAttribArray(this.orthoPosAttr);
-    gl.vertexAttribPointer(this.orthoPosAttr, 3, gl.FLOAT, false, 20, 0);
-    gl.enableVertexAttribArray(this.orthoTexCoordAttr);
-    gl.vertexAttribPointer(this.orthoTexCoordAttr, 2, gl.FLOAT, false, 20, 12);
+    gl.enableVertexAttribArray(this.orthoShader.aPosition);
+    gl.vertexAttribPointer(this.orthoShader.aPosition, 3, gl.FLOAT, false, 20, 0);
+    gl.enableVertexAttribArray(this.orthoShader.aTexcoord);
+    gl.vertexAttribPointer(this.orthoShader.aTexcoord, 2, gl.FLOAT, false, 20, 12);
 
     gl.bindTexture(gl.TEXTURE_2D, this.fbTexture);
 
