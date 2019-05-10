@@ -3,7 +3,7 @@ import {
   shaderClassAttributeName,
   extractAttributes,
   extractUniforms
-} from 'ts-shader';
+} from 'ts-shader/lib/shaderparse';
 
 export default class ShaderProgram {
   private gl: WebGLRenderingContext;
