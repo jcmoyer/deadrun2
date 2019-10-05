@@ -67,6 +67,7 @@ export default class Game {
   private pendingUpdateTime = 0;
 
   private yawQueue = 0;
+  private pitchQueue = 0;
 
   private level: Level;
   private levelID: number = 0;
@@ -149,6 +150,7 @@ export default class Game {
   update(dt: number) {
     if (this.paused) {
       this.yawQueue = 0;
+      this.pitchQueue = 0;
       this.player.beginUpdate();
       for (let death of this.enemies) {
         death.beginUpdate();
@@ -226,7 +228,9 @@ export default class Game {
 
     // TODO does this also need to be interpolated?
     this.player.addYaw(this.yawQueue);
+    this.player.addPitch(this.pitchQueue);
     this.yawQueue = 0;
+    this.pitchQueue = 0;
   }
 
   render() {
@@ -338,6 +342,7 @@ export default class Game {
   onCanvasMouseMove(e: MouseEvent) {
     if (this.havePointerLock) {
       this.yawQueue += e.movementX / 200;
+      this.pitchQueue -= e.movementY / 200;
     }
   }
 
@@ -423,6 +428,7 @@ export default class Game {
     // HACK this syncs prev and current pos
     this.player.beginUpdate();
     this.player.resetYaw();
+    this.player.resetPitch();
 
     this.enemies = [];
 

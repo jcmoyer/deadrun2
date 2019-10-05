@@ -1,5 +1,6 @@
 import { Camera } from './camera';
 import { vec2, vec3, mat4 } from 'gl-matrix';
+import { clamp } from './math';
 
 export class Player {
   public cam: Camera = new Camera();
@@ -7,6 +8,7 @@ export class Player {
   public prevEye: vec3;
   public prevLook: vec3;
   public yaw = 0;
+  public pitch = 0;
   public dead = false;
 
   constructor() {
@@ -44,7 +46,7 @@ export class Player {
   }
 
   move(d: number) {
-    this.cam.move(d);
+    this.cam.moveXZ(d);
     this.syncToCamPos();
   }
 
@@ -58,8 +60,15 @@ export class Player {
     this.cam.yaw = this.yaw;
   }
 
+  addPitch(d: number) {
+    this.pitch += d;
+    this.pitch = clamp(this.pitch, -Math.PI / 2 + 0.01, Math.PI / 2 - 0.01);
+    this.cam.pitch = this.pitch;
+  }
+
   private syncToCamPos() {
     this.pos[0] = this.cam.getEye()[0];
+    this.pos[1] = this.cam.getEye()[1];
     this.pos[2] = this.cam.getEye()[2];
   }
 
@@ -84,5 +93,10 @@ export class Player {
   resetYaw() {
     this.yaw = 0;
     this.cam.yaw = this.yaw;
+  }
+
+  resetPitch() {
+    this.pitch = 0;
+    this.cam.pitch = this.pitch;
   }
 }

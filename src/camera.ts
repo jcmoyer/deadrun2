@@ -10,7 +10,7 @@ export class Camera {
   private view: mat4;
 
   public yaw = 0;
-  private pitch = 0;
+  public pitch = 0;
 
   constructor() {
     this.up = vec3.set(
@@ -39,6 +39,14 @@ export class Camera {
     return v;
   }
 
+  getFrontWithoutPitch() {
+    const v = vec3.create();
+    v[0] = 1 * Math.cos(this.yaw);
+    v[1] = 0;
+    v[2] = 1 * Math.sin(this.yaw);
+    return v;
+  }
+
   getLook() {
     vec3.normalize(this.forward, this.getFront());
 
@@ -47,9 +55,20 @@ export class Camera {
     return look;
   }
 
+  moveXZ(d: number) {
+    const forceVec = this.getFrontWithoutPitch();
+    vec3.normalize(forceVec, forceVec);
+    vec3.mul(forceVec, forceVec, [d, d, d]);
+    vec3.add(
+      this.eye,
+      this.eye,
+      forceVec
+    );
+  }
+
   move(d: number) {
     const forceVec = vec3.clone(this.forward);
-
+    vec3.normalize(forceVec, forceVec);
     vec3.mul(forceVec, forceVec, [d, d, d]);
     vec3.add(
       this.eye,
@@ -64,6 +83,7 @@ export class Camera {
       this.forward,
       this.up
     );
+    vec3.normalize(this.right, this.right);
 
     const forceVec = vec3.clone(this.right);
     vec3.mul(forceVec, forceVec, [d, d, d]);
