@@ -38,6 +38,10 @@ export default class BillboardRenderer {
   }
 
   render(bbs: BillboardRenderable[], view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
+    if (bbs.length === 0) {
+      return;
+    }
+
     const gl = this.gl;
     this.shader.use();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);

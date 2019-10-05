@@ -10,6 +10,7 @@ import ExitEmitter from './exitemitter';
 import { TILE_SIZE, toMapX, toMapY, Level } from './level';
 import LevelRenderer from './levelrenderer';
 import ViewWeaponRenderer from './viewweaponrenderer';
+import { collideSS } from './math';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
@@ -205,12 +206,34 @@ export default class Game {
       return;
     }
 
+    this.bbRenderables = [];
+
     for (let death of this.enemies) {
       death.update(this.player, this.level.tilemap);
+      this.bbRenderables.push(death);
     }
 
-    for (let proj of this.projectiles) {
+    for (let i = this.projectiles.length - 1; i >= 0; --i) {
+      const proj = this.projectiles[i];
+      let alive = true;
       proj.update();
+
+      for (let j = this.enemies.length - 1; j >= 0; --j) {
+        const enemy = this.enemies[j];
+        if (collideSS(proj.worldPos[0], proj.worldPos[1], proj.worldPos[2], 4, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
+          this.projectiles.splice(i, 1);
+          enemy.hurt(proj.damage);
+          if (!enemy.alive) {
+            this.enemies.splice(j, 1);
+          }
+          alive = false;
+          break;
+        }
+      }
+
+      if (alive) {
+        this.bbRenderables.push(proj);
+      }
     }
 
     this.bbRenderables.sort((a, b) => {
@@ -439,7 +462,6 @@ export default class Game {
           death.onWake(() => {
           });
           this.enemies.push(death);
-          this.bbRenderables.push(death);
         }
       }
     }
@@ -509,10 +531,6 @@ export default class Game {
     this.gameFinishedCallback();
   }
 
-  registerBBRenderable(obj: BillboardRenderable) {
-    this.bbRenderables.push(obj);
-  }
-
   spawnProjectile() {
     this.assetMan.tryPlayAudio('shoot');
     const p = new Projectile(
@@ -520,7 +538,6 @@ export default class Game {
       vec3.clone(this.player.cam.getFront()),
       5);
     p.texture = this.textureCache.getTexture('fireball');
-    this.bbRenderables.push(p);
     this.projectiles.push(p);
   }
 }

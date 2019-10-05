@@ -7,6 +7,7 @@ export default class Projectile {
   direction: vec3;
   speed: number;
   texture: WebGLTexture;
+  damage: number = 10;
 
   velocity: vec3;
 

@@ -16,7 +16,7 @@ export class Death {
   private wakeCallback: () => void;
 
   private health: number = 50;
-  private alive: boolean = true;
+  public alive: boolean = true;
 
   constructor() {
     this.worldPos = vec3.create();
