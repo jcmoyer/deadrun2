@@ -3,7 +3,6 @@ import { Player } from './player';
 import { Tilemap } from './tilemap';
 import { toMapX, toMapY } from './level';
 import GridWalker from './gridwalker';
-import DeathShader from './shaders/death';
 
 const gridWalker = new GridWalker();
 
