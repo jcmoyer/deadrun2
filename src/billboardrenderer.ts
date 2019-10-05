@@ -4,6 +4,7 @@ import BillboardShader from './shaders/billboard';
 export interface BillboardRenderable {
   prevWorldPos: vec3;
   worldPos: vec3;
+  billboardSize: number;
 }
 
 export default class BillboardRenderer {
@@ -40,12 +41,12 @@ export default class BillboardRenderer {
     this.texture = t;
   }
 
-  render(death: BillboardRenderable, view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
+  render(bb: BillboardRenderable, view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
     this.shader.use();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
 
-    vec3.lerp(this.translation, death.prevWorldPos, death.worldPos, alpha);
+    vec3.lerp(this.translation, bb.prevWorldPos, bb.worldPos, alpha);
     mat4.fromTranslation(this.world, this.translation);
 
     gl.enableVertexAttribArray(this.shader.aPosition);
@@ -59,7 +60,7 @@ export default class BillboardRenderer {
     gl.uniform1f(this.shader.uInterpolation, alpha);
     gl.uniform4fv(this.shader.uFogColor, fogColor);
     gl.uniform1f(this.shader.uFogDensity, fogDensity);
-    gl.uniform1f(this.shader.uScale, 14);
+    gl.uniform1f(this.shader.uScale, bb.billboardSize);
 
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.drawArrays(gl.TRIANGLES, 0, 6);

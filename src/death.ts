@@ -10,6 +10,7 @@ const gridWalker = new GridWalker();
 export class Death {
   public prevWorldPos: vec3;
   public worldPos: vec3;
+  public billboardSize: number = 14;
   private velocity: vec3;
   private awake: boolean = false;
   private wakeCallback: () => void;
