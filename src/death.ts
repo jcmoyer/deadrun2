@@ -14,6 +14,9 @@ export class Death {
   private awake: boolean = false;
   private wakeCallback: () => void;
 
+  private health: number = 50;
+  private alive: boolean = true;
+
   constructor() {
     this.worldPos = vec3.create();
     this.velocity = vec3.create();
@@ -25,6 +28,8 @@ export class Death {
   }
 
   update(player: Player, tilemap: Tilemap) {
+    if (!this.alive) return;
+
     this.beginUpdate();
 
     if (this.awake) {
@@ -95,6 +100,17 @@ export class Death {
 
   onWake(f: typeof Death.prototype.wakeCallback) {
     this.wakeCallback = f;
+  }
+
+  kill() {
+    this.alive = false;
+  }
+
+  hurt(amount: number) {
+    this.health -= amount;
+    if (this.health <= 0) {
+      this.kill();
+    }
   }
 }
 
