@@ -23,13 +23,10 @@ assetMan.defineAssets([
   {name: 'neongrass', path: 'assets/neongrass.png', type: 'image'},
   {name: 'bloodfloor', path: 'assets/bloodfloor.png', type: 'image'},
 
-  {name: 'chant0', path: 'assets/chant0.ogg', type: 'audio'},
-  {name: 'chant1', path: 'assets/chant1.ogg', type: 'audio'},
-  {name: 'chant2', path: 'assets/chant2.ogg', type: 'audio'},
-
-
-
-  
+  // DR2 assets - TODO: delete everything above this line
+  {name: 'track1', path: 'assets/DEADRUN2_Track1.ogg', type: 'music'},
+  {name: 'hand1', path: 'assets/hand1.png', type: 'image'},
+  {name: 'hand3', path: 'assets/hand3.png', type: 'image'},
 ]);
 
 assetMan.onReady(function() {
