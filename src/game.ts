@@ -35,23 +35,6 @@ class GLTextureCache {
   }
 }
 
-class ChantPlayer {
-  private am: AssetManager;
-
-  constructor(am: AssetManager) {
-    this.am = am;  
-  }
-
-  playChant() {
-    const i = Math.floor(Math.random() * 3);
-    const a = this.am.getAudio(`chant${i}`);
-    try {
-      a.play();
-    } catch {
-    }
-  }
-}
-
 export default class Game {
   private canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
@@ -96,7 +79,6 @@ export default class Game {
   private paused = false;
 
   private textureCache: GLTextureCache;
-  private chantPlayer: ChantPlayer;
 
   private levelRenderer: LevelRenderer;
 
@@ -122,8 +104,6 @@ export default class Game {
     this.deathRenderer.setTexture(this.textureCache.getTexture('death'));
 
     this.music = am.getAudio('music');
-
-    this.chantPlayer = new ChantPlayer(this.assetMan);
 
     this.exitEmitter = new ExitEmitter(gl);
 
@@ -442,7 +422,6 @@ export default class Game {
             y * TILE_SIZE
           );
           death.onWake(() => {
-            this.chantPlayer.playChant();
           });
           this.enemies.push(death);
         }
