@@ -3,7 +3,7 @@ import { Camera } from "./camera";
 import { buildProgram, loadTexture } from './glutil';
 import { AssetManager } from './assetmanager';
 import { Death } from './death';
-import { DeathRenderer } from './enemyrenderer';
+import BillboardRenderer from './billboardrenderer';
 import { Player } from './player';
 import { DEATH } from './tilemap';
 import ExitEmitter from './exitemitter';
@@ -58,7 +58,7 @@ export default class Game {
   private levelID: number = 0;
 
   private music: HTMLAudioElement;
-  private deathRenderer: DeathRenderer;
+  private bbRenderer: BillboardRenderer;
 
   private assetMan: AssetManager;
   private exitEmitter: ExitEmitter;
@@ -102,8 +102,8 @@ export default class Game {
     this.levelRenderer = new LevelRenderer(this.gl);
     this.levelRenderer.setExitTexture(this.textureCache.getTexture('exitfloor'));
 
-    this.deathRenderer = new DeathRenderer(gl);
-    this.deathRenderer.setTexture(this.textureCache.getTexture('death'));
+    this.bbRenderer = new BillboardRenderer(gl);
+    this.bbRenderer.setTexture(this.textureCache.getTexture('death'));
 
     this.music = am.getAudio('music');
 
@@ -251,7 +251,7 @@ export default class Game {
     this.levelRenderer.render(this.projMatrix, playerView);
     
     for (let death of this.enemies) {
-      this.deathRenderer.render(death, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
+      this.bbRenderer.render(death, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
     }
 
     this.exitEmitter.render(playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
