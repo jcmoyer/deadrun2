@@ -99,6 +99,7 @@ export class AssetManager {
   tryPlayAudio(name: string) {
     const audio = this.getAudio(name);
     try {
+      audio.currentTime = 0;
       audio.play();
     } catch {
 
