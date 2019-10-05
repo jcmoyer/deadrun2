@@ -10,6 +10,7 @@ export class Death {
   public prevWorldPos: vec3;
   public worldPos: vec3;
   public billboardSize: number = 14;
+  public texture: WebGLTexture;
   private velocity: vec3;
   private awake: boolean = false;
   private wakeCallback: () => void;

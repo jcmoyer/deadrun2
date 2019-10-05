@@ -5,11 +5,11 @@ export interface BillboardRenderable {
   prevWorldPos: vec3;
   worldPos: vec3;
   billboardSize: number;
+  texture: WebGLTexture;
 }
 
 export default class BillboardRenderer {
   private gl: WebGLRenderingContext;
-  private texture: WebGLTexture;
   private pointBuffer: WebGLBuffer;
 
   private shader: BillboardShader;
@@ -37,18 +37,12 @@ export default class BillboardRenderer {
     gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
   }
 
-  setTexture(t: WebGLTexture) {
-    this.texture = t;
-  }
-
-  render(bb: BillboardRenderable, view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
+  render(bbs: BillboardRenderable[], view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
     const gl = this.gl;
     this.shader.use();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
 
-    vec3.lerp(this.translation, bb.prevWorldPos, bb.worldPos, alpha);
-    mat4.fromTranslation(this.world, this.translation);
-
+    // constant state
     gl.enableVertexAttribArray(this.shader.aPosition);
     gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 20, 0);
     gl.enableVertexAttribArray(this.shader.aTexcoord);
@@ -56,13 +50,25 @@ export default class BillboardRenderer {
 
     gl.uniformMatrix4fv(this.shader.uView, false, view);
     gl.uniformMatrix4fv(this.shader.uProjection, false, proj);
-    gl.uniformMatrix4fv(this.shader.uModel, false, this.world);
+
     gl.uniform1f(this.shader.uInterpolation, alpha);
     gl.uniform4fv(this.shader.uFogColor, fogColor);
     gl.uniform1f(this.shader.uFogDensity, fogDensity);
-    gl.uniform1f(this.shader.uScale, bb.billboardSize);
 
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    let lastTexture = bbs[0].texture;
+    gl.bindTexture(gl.TEXTURE_2D, lastTexture);
+
+    for (const bb of bbs) {
+      // minimize state changes
+      if (bb.texture !== lastTexture) {
+        gl.bindTexture(gl.TEXTURE_2D, bb.texture);
+        lastTexture = bb.texture;
+      }
+      vec3.lerp(this.translation, bb.prevWorldPos, bb.worldPos, alpha);
+      mat4.fromTranslation(this.world, this.translation);
+      gl.uniformMatrix4fv(this.shader.uModel, false, this.world);
+      gl.uniform1f(this.shader.uScale, bb.billboardSize);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
   }
 }

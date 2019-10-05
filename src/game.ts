@@ -3,7 +3,7 @@ import { Camera } from "./camera";
 import { buildProgram, loadTexture } from './glutil';
 import { AssetManager } from './assetmanager';
 import { Death } from './death';
-import BillboardRenderer from './billboardrenderer';
+import BillboardRenderer, { BillboardRenderable } from './billboardrenderer';
 import { Player } from './player';
 import { DEATH } from './tilemap';
 import ExitEmitter from './exitemitter';
@@ -13,6 +13,7 @@ import ViewWeaponRenderer from './viewweaponrenderer';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
+import Projectile from './projectile';
 
 class GLTextureCache {
   private gl: WebGLRenderingContext;
@@ -84,6 +85,9 @@ export default class Game {
   private levelRenderer: LevelRenderer;
   private viewWeaponRenderer: ViewWeaponRenderer;
 
+  private bbRenderables: BillboardRenderable[] = [];
+  private projectiles: Projectile[] = [];
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -103,7 +107,6 @@ export default class Game {
     this.levelRenderer.setExitTexture(this.textureCache.getTexture('exitfloor'));
 
     this.bbRenderer = new BillboardRenderer(gl);
-    this.bbRenderer.setTexture(this.textureCache.getTexture('death'));
 
     this.music = am.getAudio('music');
 
@@ -129,7 +132,7 @@ export default class Game {
 
     this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
     this.viewWeaponRenderer.setTexture(this.textureCache.getTexture('hand1'));
-
+    this.spawnProjectile();
     this.setLevel(new Level(leveldata[this.levelID]));
   }
 
@@ -206,7 +209,11 @@ export default class Game {
       death.update(this.player, this.level.tilemap);
     }
 
-    this.enemies.sort((a, b) => {
+    for (let proj of this.projectiles) {
+      proj.update();
+    }
+
+    this.bbRenderables.sort((a, b) => {
       return vec3.dist(playerWorld, b.worldPos) - vec3.dist(playerWorld, a.worldPos);
     });
 
@@ -249,12 +256,10 @@ export default class Game {
 
     const playerView = this.player.getInterpolatedViewMatrix(alpha);
     this.levelRenderer.render(this.projMatrix, playerView);
-    
-    for (let death of this.enemies) {
-      this.bbRenderer.render(death, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
-    }
 
     this.exitEmitter.render(playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
+
+    this.bbRenderer.render(this.bbRenderables, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
 
     this.viewWeaponRenderer.render();
 
@@ -323,7 +328,8 @@ export default class Game {
           // not user-initiated, I don't have time to research workarounds now
         }
       }
-
+    } else {
+      this.spawnProjectile();
     }
   }
 
@@ -419,11 +425,13 @@ export default class Game {
     this.player.resetPitch();
 
     this.enemies = [];
+    this.bbRenderables = [];
 
     for (let y = 0; y < this.level.tilemap.getHeight(); ++y) {
       for (let x = 0; x < this.level.tilemap.getWidth(); ++x) {
         if (this.level.tilemap.getFlag(x, y) & DEATH) {
           const death = new Death();
+          death.texture = this.textureCache.getTexture('death');
           death.setWorldPos(
             x * TILE_SIZE,
             y * TILE_SIZE
@@ -431,6 +439,7 @@ export default class Game {
           death.onWake(() => {
           });
           this.enemies.push(death);
+          this.bbRenderables.push(death);
         }
       }
     }
@@ -498,5 +507,20 @@ export default class Game {
 
     this.gameFinished = true;
     this.gameFinishedCallback();
+  }
+
+  registerBBRenderable(obj: BillboardRenderable) {
+    this.bbRenderables.push(obj);
+  }
+
+  spawnProjectile() {
+    this.assetMan.tryPlayAudio('shoot');
+    const p = new Projectile(
+      vec3.fromValues(this.player.getWorldX(), 16, this.player.getWorldZ()),
+      vec3.clone(this.player.cam.getFront()),
+      5);
+    p.texture = this.textureCache.getTexture('fireball');
+    this.bbRenderables.push(p);
+    this.projectiles.push(p);
   }
 }
