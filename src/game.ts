@@ -9,6 +9,7 @@ import { DEATH } from './tilemap';
 import ExitEmitter from './exitemitter';
 import { TILE_SIZE, toMapX, toMapY, Level } from './level';
 import LevelRenderer from './levelrenderer';
+import ViewWeaponRenderer from './viewweaponrenderer';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
@@ -81,6 +82,7 @@ export default class Game {
   private textureCache: GLTextureCache;
 
   private levelRenderer: LevelRenderer;
+  private viewWeaponRenderer: ViewWeaponRenderer;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -124,6 +126,9 @@ export default class Game {
       -1, 1, 0, 0, 1,
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(orthoVerts), gl.STATIC_DRAW);
+
+    this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
+    this.viewWeaponRenderer.setTexture(this.textureCache.getTexture('hand1'));
 
     this.setLevel(new Level(leveldata[this.levelID]));
   }
@@ -250,6 +255,8 @@ export default class Game {
     }
 
     this.exitEmitter.render(playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
+
+    this.viewWeaponRenderer.render();
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
