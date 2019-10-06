@@ -9,7 +9,8 @@ const gridWalker = new GridWalker();
 export class Death {
   public prevWorldPos: vec3;
   public worldPos: vec3;
-  public billboardSize: number = 14;
+  public billboardWidth: number = 14;
+  public billboardHeight: number = 14;
   public texture: WebGLTexture;
   private velocity: vec3;
   private awake: boolean = false;

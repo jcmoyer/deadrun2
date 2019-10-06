@@ -4,7 +4,8 @@ import BillboardShader from './shaders/billboard';
 export interface BillboardRenderable {
   prevWorldPos: vec3;
   worldPos: vec3;
-  billboardSize: number;
+  billboardWidth: number;
+  billboardHeight: number;
   texture: WebGLTexture;
 }
 
@@ -71,7 +72,7 @@ export default class BillboardRenderer {
       vec3.lerp(this.translation, bb.prevWorldPos, bb.worldPos, alpha);
       mat4.fromTranslation(this.world, this.translation);
       gl.uniformMatrix4fv(this.shader.uModel, false, this.world);
-      gl.uniform1f(this.shader.uScale, bb.billboardSize);
+      gl.uniform2f(this.shader.uScale, bb.billboardWidth, bb.billboardHeight);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
   }

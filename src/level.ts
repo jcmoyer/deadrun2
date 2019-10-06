@@ -11,6 +11,12 @@ export function toMapY(worldZ: number) {
   return Math.floor(worldZ / TILE_SIZE + 0.5);
 }
 
+interface LevelItem {
+  type: string;
+  x: number;
+  y: number;
+}
+
 interface LevelObject {
   text: string;
   enableFog: boolean;
@@ -19,6 +25,7 @@ interface LevelObject {
   floor: string;
   wall: string;
   music?: string;
+  items?: LevelItem[];
 }
 
 export class Level {
@@ -30,6 +37,7 @@ export class Level {
   public floor: string;
   public wall: string;
   public music?: string;
+  public items: LevelItem[];
 
   constructor(obj: LevelObject) {
     this.tilemap = loadTilemap(obj.text);
@@ -50,5 +58,11 @@ export class Level {
     this.floor = obj.floor;
     this.wall = obj.wall;
     this.music = obj.music;
+
+    if (obj.items) {
+      this.items = obj.items;
+    } else {
+      this.items = [];
+    }
   }
 }

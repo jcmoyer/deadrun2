@@ -3,7 +3,8 @@ import { vec3 } from "gl-matrix";
 export default class Projectile {
   prevWorldPos: vec3;
   worldPos: vec3;
-  billboardSize: number = 8;
+  billboardWidth: number = 8;
+  billboardHeight: number = 8;
   direction: vec3;
   speed: number;
   texture: WebGLTexture;

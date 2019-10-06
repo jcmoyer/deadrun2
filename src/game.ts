@@ -12,6 +12,7 @@ import LevelRenderer from './levelrenderer';
 import ViewWeaponRenderer from './viewweaponrenderer';
 import { collideSS } from './math';
 import SkydomeRenderer from './skydome';
+import WorldItem from './worlditem';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
@@ -89,6 +90,7 @@ export default class Game {
 
   private bbRenderables: BillboardRenderable[] = [];
   private projectiles: Projectile[] = [];
+  private worldItems: WorldItem[] = [];
 
   private skydomeRenderer: SkydomeRenderer;
   private time: number = 0;
@@ -112,8 +114,8 @@ export default class Game {
     this.levelRenderer.setExitTexture(this.textureCache.getTexture('exitfloor'));
 
     this.bbRenderer = new BillboardRenderer(gl);
-
-    this.music = am.getAudio('music');
+    
+    this.music = null;
 
     this.exitEmitter = new ExitEmitter(gl);
 
@@ -214,6 +216,11 @@ export default class Game {
     }
 
     this.bbRenderables = [];
+
+    for (let item of this.worldItems) {
+      item.update();
+      this.bbRenderables.push(item);
+    }
 
     for (let death of this.enemies) {
       death.update(this.player, this.level.tilemap);
@@ -355,7 +362,7 @@ export default class Game {
     if (!this.havePointerLock) {
       this.canvas.requestPointerLock();
 
-      if (this.music.paused) {
+      if (this.music && this.music.paused) {
         try {
           this.music.play();
         } catch {
@@ -461,7 +468,9 @@ export default class Game {
     this.player.resetPitch();
 
     this.enemies = [];
+    this.projectiles = [];
     this.bbRenderables = [];
+    this.worldItems = [];
 
     for (let y = 0; y < this.level.tilemap.getHeight(); ++y) {
       for (let x = 0; x < this.level.tilemap.getWidth(); ++x) {
@@ -477,6 +486,14 @@ export default class Game {
           this.enemies.push(death);
         }
       }
+    }
+
+    for (const item of this.level.items) {
+      const i = new WorldItem(
+        item.type, vec3.fromValues(item.x * 16, 0, item.y * 16)
+      );
+      i.texture = this.textureCache.getTexture(item.type);
+      this.worldItems.push(i);
     }
 
     const exit = this.level.tilemap.getExitTile();
@@ -502,7 +519,7 @@ export default class Game {
   }
 
   stopMusic() {
-    if (!this.music.paused) {
+    if (this.music && !this.music.paused) {
       this.music.pause();
       this.music.currentTime = 0;
     }
