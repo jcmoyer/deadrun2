@@ -10,21 +10,10 @@ const assetMan = new AssetManager();
 
 assetMan.defineAssets([
   {name: 'placeholder', path: 'assets/dr2/placeholder.png', type: 'image'},
-  {name: 'exitfloor', path: 'assets/dr2/placeholder.png', type: 'image'},
+  {name: 'exitfloor', path: 'assets/dr2/overgrown_dirt.png', type: 'image'},
 
-  {name: 'wall', path: 'assets/wall.png', type: 'image'},
-  {name: 'stones', path: 'assets/stones.png', type: 'image'},
-  {name: 'floor', path: 'assets/floor.png', type: 'image'},
-  {name: 'death', path: 'assets/skull_front.png', type: 'image'},
-  {name: 'music', path: 'assets/WorldOfDeath.ogg', type: 'music'},
-  {name: 'loop2', path: 'assets/loop2.ogg', type: 'music'},
-  {name: 'levelcomplete', path: 'assets/levelcomplete.ogg', type: 'audio'},
+  {name: 'levelcomplete', path: 'assets/dr2/levelcomplete.ogg', type: 'audio'},
   {name: 'playerdeath', path: 'assets/death.ogg', type: 'audio'},
-  
-  {name: 'pillar', path: 'assets/pillar.png', type: 'image'},
-  {name: 'bloodpillar', path: 'assets/bloodpillar.png', type: 'image'},
-  {name: 'neongrass', path: 'assets/neongrass.png', type: 'image'},
-  {name: 'bloodfloor', path: 'assets/bloodfloor.png', type: 'image'},
 
   // DR2 assets - TODO: delete everything above this line
   {name: 'track0', path: 'assets/dr2/Track1_0.ogg', type: 'music'},
@@ -46,6 +35,12 @@ assetMan.defineAssets([
   {name: 'bonethud', path: 'assets/dr2/bonethud.ogg', type: 'audio'},
   {name: 'fireball_launch', path: 'assets/dr2/fireball_launch.ogg', type: 'audio'},
   {name: 'fireball_channel', path: 'assets/dr2/fireball_channel.ogg', type: 'audio'},
+  {name: 'fireball_hit', path: 'assets/dr2/fireball_hit.ogg', type: 'audio'},
+  {name: 'bone', path: 'assets/dr2/bone.png', type: 'image'},
+  {name: 'ember', path: 'assets/dr2/ember.png', type: 'image'},
+  {name: 'death', path: 'assets/dr2/death2.png', type: 'image'},
+  {name: 'overgrown_wall', path: 'assets/dr2/overgrown_wall.png', type: 'image'},
+  {name: 'overgrown_dirt', path: 'assets/dr2/overgrown_dirt.png', type: 'image'},
 ]);
 
 assetMan.onReady(function() {
