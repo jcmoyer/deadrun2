@@ -1,98 +1,83 @@
 export default [
   {
     enableFog: true,
-    fogColor:  [0.0, 0.0, 0.0, 1.0],
-    fogDensity: 0.05,
-    floor: 'stones',
-    wall: 'stones',
+    fogColor:  [0.7, 0.7, 0.7, 1.0],
+    fogDensity: 0.005,
+    floor: 'overgrown_dirt',
+    wall: 'overgrown_wall',
+    music: 'track0',
     text:
 `
-E______P_D_D
+__##############
+____############
+_______#########
+_______#########
+P______________E
+_______#########
+_______#########
+____############
+__##############
+`,
+    items: [
+      {type: 'sword', x: 4, y: 4},
+    ]
+  },
+
+  {
+    enableFog: true,
+    fogColor:  [0.1, 0.0, 0.0, 1.0],
+    fogDensity: 0.05,
+    floor: 'overgrown_dirt',
+    wall: 'overgrown_wall',
+    music: 'track2',
+    text:
+`
+####__________#
+####_##_#####_#
+___#_##____D#_#
+P__D_###_####_#
+___#_###_###ED#
+####_____######
 `
   },
 
   {
     enableFog: true,
-    fogColor:  [0.8, 0.8, 0.8, 1.0],
-    fogDensity: 0.02,
-    floor: 'neongrass',
-    wall: 'stones',
+    fogColor:  [0.1, 0.0, 0.0, 1.0],
+    fogDensity: 0.05,
+    floor: 'overgrown_dirt',
+    wall: 'overgrown_wall',
+    music: 'track3',
     text:
 `
 ##############
-###______#####
-###_###___####
-##_________###
-#P__##______##
-##_____##____#
-###____###___#
-###_____###__#
-#####_D_###E##
-`
+##########___#
+#########E___#
+##########___#
+#####D##D###_#
+P____________#
+#####D##D#####
+`,
+    items: [
+      {type: 'spellbook', x: 11, y: 2}
+    ]
   },
 
   {
     enableFog: true,
-    fogColor:  [0.8, 0.8, 0.8, 1.0],
-    fogDensity: 0.02,
-    floor: 'stones',
-    wall: 'stones',
-    text:
-`
-#_________#
-___#___#___
-___________
-___#_D_#___
-___D_______
-P__D_E_#__#
-___D_______
-___#_D_#___
-___________
-___#___#___
-#_________#
-`
-  },
-
-  {
-    enableFog: true,
-    //fogColor:  [0.1, 0.0, 0.0, 1.0],
-    fogColor:  [0.2, 0.0, 0.0, 1.0],
-    floor: 'floor',
-    wall: 'pillar',
-    text:
-`
-###____#####
-###D##_#D#E#
-###_##_#_#_#
-P____#_#_#_#
-##___#___#_#
-##___###___#
-#_____##___#
-#_____##___#
-#_____##___#
-##___####D##
-############
-`
-  },
-
-  {
-    enableFog: true,
-    //fogColor:  [0.1, 0.0, 0.0, 1.0],
     fogColor:  [0.1, 0.0, 0.0, 1.0],
     fogDensity: 0.05,
-    floor: 'bloodfloor',
-    wall: 'bloodpillar',
-    music: 'loop2',
+    floor: 'overgrown_dirt',
+    wall: 'overgrown_wall',
+    music: 'track3',
     text:
 `
-__D_D#D_D_____________##D######
-#__D_D_D__#___#__##____#_######
-_#_#___#_#___#D___#______#____D
-P___________##_______####___E##
-_#_#___#_#___#____#____#______#
-#__D_D_D__#___#__##____#______#
-__D_D#D_D________##__________##
-################____###########
+###D#D#D#D#D####
+###__________###
+__#____________#
+P_______D____#D#
+__#__________#D#
+###D#D#D#D#D##E#
 `
   }
 
