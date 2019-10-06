@@ -11,14 +11,12 @@ const assetMan = new AssetManager();
 assetMan.defineAssets([
   {name: 'placeholder', path: 'assets/dr2/placeholder.png', type: 'image'},
   {name: 'exitfloor', path: 'assets/dr2/overgrown_dirt.png', type: 'image'},
-
   {name: 'levelcomplete', path: 'assets/dr2/levelcomplete.ogg', type: 'audio'},
-  {name: 'playerdeath', path: 'assets/death.ogg', type: 'audio'},
-
-  // DR2 assets - TODO: delete everything above this line
+  {name: 'playerdeath', path: 'assets/dr2/playerdeath.ogg', type: 'audio'},
   {name: 'track0', path: 'assets/dr2/Track1_0.ogg', type: 'music'},
   {name: 'track1', path: 'assets/dr2/Track1_1.ogg', type: 'music'},
   {name: 'track2', path: 'assets/dr2/Track1_2.ogg', type: 'music'},
+  {name: 'track3', path: 'assets/dr2/Track1_3.ogg', type: 'music'},
   {name: 'spellbook_v_idle', path: 'assets/dr2/hand1.png', type: 'image'},
   {name: 'spellbook_v_action', path: 'assets/dr2/hand3.png', type: 'image'},
   {name: 'fireball', path: 'assets/dr2/fireball.png', type: 'image'},
@@ -41,6 +39,10 @@ assetMan.defineAssets([
   {name: 'death', path: 'assets/dr2/death2.png', type: 'image'},
   {name: 'overgrown_wall', path: 'assets/dr2/overgrown_wall.png', type: 'image'},
   {name: 'overgrown_dirt', path: 'assets/dr2/overgrown_dirt.png', type: 'image'},
+  // must be 0 indexed
+  {name: 'whisper0', path: 'assets/dr2/whisper1.ogg', type: 'audio'},
+  {name: 'whisper1', path: 'assets/dr2/whisper2.ogg', type: 'audio'},
+  {name: 'whisper2', path: 'assets/dr2/whisper3.ogg', type: 'audio'},
 ]);
 
 assetMan.onReady(function() {

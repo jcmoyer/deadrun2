@@ -22,6 +22,23 @@ import Projectile from './projectile';
 import Weapon from './weapon';
 import { sword, spellbook } from './weaponinfo';
 
+class WhisperPlayer {
+  private am: AssetManager;
+
+  constructor(am: AssetManager) {
+    this.am = am;
+  }
+
+  playRandomWhisper() {
+    const i = Math.floor(Math.random() * 3);
+    const a = this.am.getAudio(`whisper${i}`);
+    try {
+      a.play();
+    } catch {
+    }
+  }
+}
+
 class GLTextureCache {
   private gl: WebGLRenderingContext;
   private am: AssetManager;
@@ -101,6 +118,7 @@ export default class Game {
 
   private musicFadeTimer: Timer = null;
   private debrisMan: DebrisManager;
+  private whisperPlayer: WhisperPlayer;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -148,6 +166,7 @@ export default class Game {
 
     this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
     this.debrisMan = new DebrisManager(this.textureCache);
+    this.whisperPlayer = new WhisperPlayer(this.assetMan);
     
     this.setLevel(new Level(leveldata[this.levelID]));
   }
@@ -501,6 +520,7 @@ export default class Game {
             y * TILE_SIZE
           );
           death.onWake(() => {
+            this.whisperPlayer.playRandomWhisper();
           });
           this.enemies.push(death);
         }
