@@ -29,7 +29,7 @@ export default class SkydomeRenderer {
 
     gl.enableVertexAttribArray(this.shader.aPosition);
     gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 20, 0);
-    gl.enableVertexAttribArray(this.shader.aPosition);
+    gl.enableVertexAttribArray(this.shader.aTexcoord);
     gl.vertexAttribPointer(this.shader.aTexcoord, 2, gl.FLOAT, false, 20, 12);
 
     gl.uniformMatrix4fv(this.shader.uView, false, view);
@@ -45,7 +45,7 @@ export default class SkydomeRenderer {
 
     gl.uniform1f(this.shader.uTime, time);
 
-    gl.drawArrays(gl.TRIANGLES, 0, 3 * SkydomeModel.length / 5);
+    gl.drawArrays(gl.TRIANGLES, 0, SkydomeModel.length / 5);
 
     gl.depthMask(true);
 
