@@ -38,3 +38,7 @@ export function loadTexture(gl: WebGLRenderingContext, texdata: TexImageSource) 
   gl.bindTexture(gl.TEXTURE_2D, null);
   return texture;
 }
+
+export interface TextureProvider {
+  getTexture(name: string): WebGLTexture;
+}

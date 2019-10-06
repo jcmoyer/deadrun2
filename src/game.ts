@@ -13,10 +13,13 @@ import ViewWeaponRenderer from './viewweaponrenderer';
 import { collideSS } from './math';
 import SkydomeRenderer from './skydome';
 import WorldItem from './worlditem';
+import Timer from './timer';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
 import Projectile from './projectile';
+import Weapon from './weapon';
+import { sword, spellbook } from './weaponinfo';
 
 class GLTextureCache {
   private gl: WebGLRenderingContext;
@@ -95,6 +98,8 @@ export default class Game {
   private skydomeRenderer: SkydomeRenderer;
   private time: number = 0;
 
+  private musicFadeTimer: Timer = null;
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -140,8 +145,7 @@ export default class Game {
     this.skydomeRenderer = new SkydomeRenderer(gl);
 
     this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
-    this.viewWeaponRenderer.setTexture(this.textureCache.getTexture('hand1'));
-    this.spawnProjectile();
+    
     this.setLevel(new Level(leveldata[this.levelID]));
   }
 
@@ -194,6 +198,12 @@ export default class Game {
 
     this.player.setWorldPos(new_px, new_pz);
 
+    if (this.player.equippedWeapon) {
+      this.player.equippedWeapon.update(dt);
+    }
+
+    this.pickupItems();
+
     // TODO: clean this up by converting player worldpos to vec3...
     const playerWorld = vec3.create();
     vec3.set(playerWorld, this.player.getWorldX(), 16, this.player.getWorldZ());
@@ -223,38 +233,26 @@ export default class Game {
     }
 
     for (let death of this.enemies) {
-      death.update(this.player, this.level.tilemap);
+      death.update(this.player, this.level.tilemap, dt);
       this.bbRenderables.push(death);
     }
 
-    for (let i = this.projectiles.length - 1; i >= 0; --i) {
-      const proj = this.projectiles[i];
-      let alive = true;
-      proj.update();
-
-      for (let j = this.enemies.length - 1; j >= 0; --j) {
-        const enemy = this.enemies[j];
-        if (collideSS(proj.worldPos[0], proj.worldPos[1], proj.worldPos[2], 4, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
-          this.projectiles.splice(i, 1);
-          enemy.hurt(proj.damage);
-          if (!enemy.alive) {
-            this.enemies.splice(j, 1);
-          }
-          alive = false;
-          break;
-        }
-      }
-
-      if (alive) {
-        this.bbRenderables.push(proj);
-      }
-    }
+    this.updateProjectiles(dt);
 
     this.bbRenderables.sort((a, b) => {
       return vec3.dist(playerWorld, b.worldPos) - vec3.dist(playerWorld, a.worldPos);
     });
 
     this.exitEmitter.update();
+
+    if (this.musicFadeTimer) {
+      // sequencing important, update may invalidate this timer so eval first
+      this.musicFadeTimer.evaluate((s) => {
+        if (this.music)
+          this.music.volume = 1 - s;
+      });
+      this.musicFadeTimer.update(dt);
+    }
 
     // TODO does this also need to be interpolated?
     this.player.addYaw(this.yawQueue);
@@ -304,7 +302,9 @@ export default class Game {
 
     this.bbRenderer.render(this.bbRenderables, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
 
-    this.viewWeaponRenderer.render();
+    if (this.player.equippedWeapon) {
+      this.viewWeaponRenderer.render(this.player.equippedWeapon, this.textureCache);
+    }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -351,6 +351,14 @@ export default class Game {
 
     if (e.key === 'f') {
       this.canvas.requestFullscreen();
+    } else if (e.key === '1') {
+      if (this.player.hasWeapon(0)) {
+        this.player.changeWeapon(0);
+      }
+    } else if (e.key === '2') {
+      if (this.player.hasWeapon(1)) {
+        this.player.changeWeapon(1);
+      }
     }
   }
 
@@ -372,7 +380,12 @@ export default class Game {
         }
       }
     } else {
-      this.spawnProjectile();
+      if (this.player.equippedWeapon && this.player.equippedWeapon.canPerformAction()) {
+        this.player.equippedWeapon.doAction();
+        this.assetMan.tryPlayAudio(
+          this.player.equippedWeapon.info.actionSoundName
+        );
+      }
     }
   }
 
@@ -490,7 +503,7 @@ export default class Game {
 
     for (const item of this.level.items) {
       const i = new WorldItem(
-        item.type, vec3.fromValues(item.x * 16, 0, item.y * 16)
+        item.type, vec3.fromValues(item.x * TILE_SIZE, 0, item.y * TILE_SIZE)
       );
       i.texture = this.textureCache.getTexture(item.type);
       this.worldItems.push(i);
@@ -562,12 +575,129 @@ export default class Game {
   }
 
   spawnProjectile() {
-    this.assetMan.tryPlayAudio('shoot');
+    this.assetMan.tryPlayAudio('fireball_launch');
     const p = new Projectile(
       vec3.fromValues(this.player.getWorldX(), 16, this.player.getWorldZ()),
       vec3.clone(this.player.cam.getFront()),
       5);
     p.texture = this.textureCache.getTexture('fireball');
     this.projectiles.push(p);
+  }
+
+  pickupItems() {
+    let picked = false;
+    let pickedName;
+
+    for (let i = this.worldItems.length - 1; i >= 0; --i) {
+      const item = this.worldItems[i];
+      const collides = collideSS(
+        this.player.getWorldX(), 16, this.player.getWorldZ(), this.player.pickupRadius,
+        item.worldPos[0], item.worldPos[1], item.worldPos[2], this.player.pickupRadius
+      );
+      if (collides) {
+        this.worldItems.splice(i, 1);   
+        this.assetMan.tryPlayAudio('pickup');
+        pickedName = item.itemName;
+        picked = true;
+      }
+    }
+
+    if (pickedName === 'sword') {
+      this.playMusic('track1', 5000);
+
+      const w = new Weapon(sword);
+      w.on('activate', () => {
+        this.doSword();
+      });
+      this.player.giveWeapon(
+        w
+      );
+    } else if (pickedName === 'spellbook') {
+      const w = new Weapon(spellbook);
+      w.on('activate', () => {
+        this.doSpellbook();
+      });
+      this.player.giveWeapon(
+        w
+      );
+    }
+  }
+
+  playMusic(name: string, fadeTimeMS: number) {
+    if (this.music) {
+      this.musicFadeTimer = new Timer(fadeTimeMS);
+      this.musicFadeTimer.on('expire', () => {
+        this.stopMusic();
+        this.music.volume = 1;
+        this.music = this.assetMan.getAudio(name);
+        try {
+          this.music.play();
+        } catch {}
+        this.musicFadeTimer = null;
+      });
+    } else {
+      this.music = this.assetMan.getAudio(name);
+      try {
+        this.music.play();
+      } catch {}
+    }
+  }
+
+  doSword() {
+    const pos = vec3.fromValues(this.player.getWorldX(), 16, this.player.getWorldZ());
+    const front = vec3.clone(this.player.cam.getFront());
+    vec3.normalize(front, front);
+    vec3.scale(front, front, 8);
+    const sword = vec3.add(pos, pos, front);
+    for (let i = this.enemies.length - 1; i >= 0; --i) {
+      const enemy = this.enemies[i];
+      const collide = collideSS(
+        sword[0], sword[1], sword[2], 20,
+        enemy.getWorldX(), 16, enemy.getWorldZ(), 8);
+      if (collide) {
+        enemy.hurt(10);
+        this.assetMan.tryPlayAudio('bonethud');
+        if (!enemy.alive) this.enemies.splice(i, 1);
+      }
+    }
+  }
+
+  doSpellbook() {
+    this.spawnProjectile();
+  }
+
+  updateProjectiles(dt: number) {
+    for (let i = this.projectiles.length - 1; i >= 0; --i) {
+      const proj = this.projectiles[i];
+      let alive = true;
+      proj.update();
+
+      for (let j = this.enemies.length - 1; j >= 0; --j) {
+        const enemy = this.enemies[j];
+        if (collideSS(proj.worldPos[0], proj.worldPos[1], proj.worldPos[2], 4, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
+          this.projectiles.splice(i, 1);
+
+          this.damageEnemiesInRadius(proj.worldPos, 64, 100);
+
+          break;
+        }
+      }
+
+      if (alive) {
+        this.bbRenderables.push(proj);
+      }
+    }
+  }
+
+  damageEnemiesInRadius(pos: vec3, radius: number, damage: number) {
+    for (let j = this.enemies.length - 1; j >= 0; --j) {
+      const enemy = this.enemies[j];
+      if (collideSS(pos[0], pos[1], pos[2], radius, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
+        enemy.hurt(damage);
+        if (!enemy.alive) {
+          this.enemies.splice(j, 1);
+        }
+      }
+    }
   }
 }

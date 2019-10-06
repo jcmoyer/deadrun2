@@ -7,6 +7,7 @@ export interface BillboardRenderable {
   billboardWidth: number;
   billboardHeight: number;
   texture: WebGLTexture;
+  billboardFlash?: boolean;
 }
 
 export default class BillboardRenderer {
@@ -73,6 +74,7 @@ export default class BillboardRenderer {
       mat4.fromTranslation(this.world, this.translation);
       gl.uniformMatrix4fv(this.shader.uModel, false, this.world);
       gl.uniform2f(this.shader.uScale, bb.billboardWidth, bb.billboardHeight);
+      gl.uniform1f(this.shader.uBillboardFlash, bb.billboardFlash ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
   }

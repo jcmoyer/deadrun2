@@ -3,6 +3,7 @@ import { Player } from './player';
 import { Tilemap } from './tilemap';
 import { toMapX, toMapY } from './level';
 import GridWalker from './gridwalker';
+import Timer from './timer';
 
 const gridWalker = new GridWalker();
 
@@ -15,6 +16,8 @@ export class Death {
   private velocity: vec3;
   private awake: boolean = false;
   private wakeCallback: () => void;
+  public billboardFlash: boolean;
+  private flashTimer: Timer;
 
   private health: number = 50;
   public alive: boolean = true;
@@ -23,14 +26,20 @@ export class Death {
     this.worldPos = vec3.create();
     this.velocity = vec3.create();
     this.prevWorldPos = vec3.create();
+    this.flashTimer = new Timer(0);
+    this.flashTimer.on('expire', () => {
+      this.billboardFlash = false;
+    });
   }
 
   beginUpdate() {
     vec3.copy(this.prevWorldPos, this.worldPos);
   }
 
-  update(player: Player, tilemap: Tilemap) {
+  update(player: Player, tilemap: Tilemap, dt: number) {
     if (!this.alive) return;
+
+    this.flashTimer.update(dt);
 
     this.beginUpdate();
 
@@ -113,5 +122,8 @@ export class Death {
     if (this.health <= 0) {
       this.kill();
     }
+
+    this.billboardFlash = true;
+    this.flashTimer.restart(50);
   }
 }

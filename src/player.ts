@@ -1,6 +1,7 @@
 import { Camera } from './camera';
 import { vec2, vec3, mat4 } from 'gl-matrix';
 import { clamp } from './math';
+import Weapon from './weapon';
 
 export class Player {
   public cam: Camera = new Camera();
@@ -11,11 +12,15 @@ export class Player {
   public pitch = 0;
   public dead = false;
 
+  public weapons: Weapon[];
+  private currentWeapon: number = -1;
+
   constructor() {
     this.pos = vec3.create();
     this.syncCamToMe();
     this.prevEye = vec3.clone(this.cam.getEye());
     this.prevLook = vec3.clone(this.cam.getLook());
+    this.weapons = [];
   }
 
   beginUpdate() {
@@ -98,5 +103,32 @@ export class Player {
   resetPitch() {
     this.pitch = 0;
     this.cam.pitch = this.pitch;
+  }
+
+  get pickupRadius() {
+    return 8;
+  }
+
+  get equippedWeapon(): Weapon | null {
+    if (this.weapons.length === 0) {
+      return null;
+    } else {
+      return this.weapons[this.currentWeapon];
+    }
+  }
+
+  giveWeapon(w: Weapon) {
+    this.weapons.push(w);
+    if (this.currentWeapon === -1) {
+      this.currentWeapon = 0;
+    }
+  }
+
+  hasWeapon(id: number) {
+    return this.weapons.length > id;
+  }
+
+  changeWeapon(id: number) {
+    this.currentWeapon = id;
   }
 }

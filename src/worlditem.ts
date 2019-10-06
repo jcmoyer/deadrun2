@@ -9,10 +9,13 @@ export default class WorldItem {
 
   hoverHeight: number = 0;
 
+  itemName: string;
+
   constructor(type: string, pos: vec3) {
     this.prevWorldPos = vec3.clone(pos);
     this.worldPos = vec3.clone(pos);
 
+    this.itemName = type;
     if (type === 'sword') {
       this.billboardWidth = 4;
       this.billboardHeight = 8;

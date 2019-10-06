@@ -9,7 +9,7 @@ export default class Timer extends EventEmitter {
   private state: any;
   private cancelled: boolean;
 
-  constructor(duration: number, state: any) {
+  constructor(duration: number, state?: any) {
     super();
     this.duration = duration;
     this.remaining = duration;
@@ -29,7 +29,7 @@ export default class Timer extends EventEmitter {
     return this.duration;
   }
 
-  evaluate(f: any) {
+  evaluate(f: (percentComplete: number) => any) {
     return f(1 - this.remaining / this.duration);
   }
 

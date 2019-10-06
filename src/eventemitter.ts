@@ -11,11 +11,11 @@ export default class EventEmitter {
     }
   }
 
-  on(name: string, callback) {
+  on(name: string, callback: any) {
     this.getOrCreate(name).push(callback);
   }
 
-  removeListener(name: string, callback) {
+  removeListener(name: string, callback: any) {
     if (this.events.has(name)) {
       const list = this.events.get(name);
       const i = list.findIndex((value) => value == callback);
@@ -33,7 +33,7 @@ export default class EventEmitter {
     if (this.events.has(name)) {
       return this.events.get(name);
     } else {
-      const array = [];
+      const array: any[] = [];
       this.events.set(name, array);
       return array;
     }
