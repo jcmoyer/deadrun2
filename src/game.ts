@@ -14,6 +14,7 @@ import { collideSS } from './math';
 import SkydomeRenderer from './skydome';
 import WorldItem from './worlditem';
 import Timer from './timer';
+import DebrisManager, { DEBRIS_BONE, DEBRIS_EMBER } from './debris';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
@@ -99,6 +100,7 @@ export default class Game {
   private time: number = 0;
 
   private musicFadeTimer: Timer = null;
+  private debrisMan: DebrisManager;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -145,6 +147,7 @@ export default class Game {
     this.skydomeRenderer = new SkydomeRenderer(gl);
 
     this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
+    this.debrisMan = new DebrisManager(this.textureCache);
     
     this.setLevel(new Level(leveldata[this.levelID]));
   }
@@ -238,6 +241,9 @@ export default class Game {
     }
 
     this.updateProjectiles(dt);
+
+    this.debrisMan.update(dt);
+    this.debrisMan.submitToRenderList(this.bbRenderables);
 
     this.bbRenderables.sort((a, b) => {
       return vec3.dist(playerWorld, b.worldPos) - vec3.dist(playerWorld, a.worldPos);
@@ -656,6 +662,7 @@ export default class Game {
         enemy.getWorldX(), 16, enemy.getWorldZ(), 8);
       if (collide) {
         enemy.hurt(10);
+        this.debrisMan.spawnMulti(DEBRIS_BONE, enemy.worldPos, 10);
         this.assetMan.tryPlayAudio('bonethud');
         if (!enemy.alive) this.enemies.splice(i, 1);
       }
@@ -676,8 +683,9 @@ export default class Game {
         const enemy = this.enemies[j];
         if (collideSS(proj.worldPos[0], proj.worldPos[1], proj.worldPos[2], 4, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
           this.projectiles.splice(i, 1);
-
+          this.assetMan.tryPlayAudio('fireball_hit');
           this.damageEnemiesInRadius(proj.worldPos, 64, 100);
+          
 
           break;
         }
@@ -694,6 +702,8 @@ export default class Game {
       const enemy = this.enemies[j];
       if (collideSS(pos[0], pos[1], pos[2], radius, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
         enemy.hurt(damage);
+        this.debrisMan.spawnMulti(DEBRIS_BONE, enemy.worldPos, 3);
+        this.debrisMan.spawnMulti(DEBRIS_EMBER, enemy.worldPos, 10);
         if (!enemy.alive) {
           this.enemies.splice(j, 1);
         }

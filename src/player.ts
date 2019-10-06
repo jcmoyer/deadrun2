@@ -81,6 +81,10 @@ export class Player {
     this.cam.setEye(this.pos[0], 16, this.pos[2]);
   }
 
+  getWorldPos() {
+    return this.pos;
+  }
+
   getWorldX() {
     return this.pos[0];
   }
