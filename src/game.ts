@@ -11,6 +11,7 @@ import { TILE_SIZE, toMapX, toMapY, Level } from './level';
 import LevelRenderer from './levelrenderer';
 import ViewWeaponRenderer from './viewweaponrenderer';
 import { collideSS } from './math';
+import SkydomeRenderer from './skydome';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
@@ -89,6 +90,9 @@ export default class Game {
   private bbRenderables: BillboardRenderable[] = [];
   private projectiles: Projectile[] = [];
 
+  private skydomeRenderer: SkydomeRenderer;
+  private time: number = 0;
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -131,6 +135,8 @@ export default class Game {
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(orthoVerts), gl.STATIC_DRAW);
 
+    this.skydomeRenderer = new SkydomeRenderer(gl);
+
     this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
     this.viewWeaponRenderer.setTexture(this.textureCache.getTexture('hand1'));
     this.spawnProjectile();
@@ -147,6 +153,7 @@ export default class Game {
       }
       return;
     }
+    this.time += dt;
     this.player.beginUpdate();
 
     const old_px = this.player.getWorldX();
@@ -278,6 +285,12 @@ export default class Game {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     const playerView = this.player.getInterpolatedViewMatrix(alpha);
+
+    this.skydomeRenderer.render(playerView, this.projMatrix,
+      this.textureCache.getTexture('sky0'),
+      this.textureCache.getTexture('sky1'),
+      this.time);
+
     this.levelRenderer.render(this.projMatrix, playerView);
 
     this.exitEmitter.render(playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);

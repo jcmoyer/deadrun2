@@ -29,6 +29,8 @@ assetMan.defineAssets([
   {name: 'hand3', path: 'assets/dr2/hand3.png', type: 'image'},
   {name: 'fireball', path: 'assets/dr2/fireball.png', type: 'image'},
   {name: 'shoot', path: 'assets/dr2/shoot.ogg', type: 'audio'},
+  {name: 'sky0', path: 'assets/dr2/sky0.png', type: 'image'},
+  {name: 'sky1', path: 'assets/dr2/sky1.png', type: 'image'},
 ]);
 
 assetMan.onReady(function() {
