@@ -124,7 +124,9 @@ export default class Game {
     this.assetMan = am;
 
     this.canvas = canvas;
-    this.gl = this.canvas.getContext('webgl');
+    this.gl = this.canvas.getContext('webgl', {
+      alpha: false
+    });
 
     const gl = this.gl;
 
