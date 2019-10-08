@@ -4,7 +4,11 @@ import EventEmitter from './eventemitter';
 
 type WeaponState = 'idle' | 'action';
 
-export default class Weapon extends EventEmitter {
+interface WeaponEvents {
+  activate(): any;
+}
+
+export default class Weapon extends EventEmitter<WeaponEvents> {
   state: WeaponState;
   actionTime: number;
 

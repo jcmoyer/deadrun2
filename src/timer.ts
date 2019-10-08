@@ -3,7 +3,11 @@ import EventEmitter from './eventemitter';
 
 export type TimerStatus = 'cancelled' | 'active' | 'finished';
 
-export default class Timer extends EventEmitter {
+interface TimerEvents {
+  expire(): any;
+}
+
+export default class Timer extends EventEmitter<TimerEvents> {
   private duration: number;
   private remaining: number;
   private state: any;

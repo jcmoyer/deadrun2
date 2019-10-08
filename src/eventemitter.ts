@@ -1,39 +1,41 @@
-export default class EventEmitter {
-  private events: Map<string, any[]>;
+type AnyFunction = (...args: any[]) => any;
+
+export default class EventEmitter<Events extends {[K in keyof Events]: AnyFunction}> {
+  private events: Map<keyof Events, AnyFunction[]>;
 
   constructor() {
     this.events = new Map();
   }
 
-  emit(name: string, ...args: any[]) {
+  protected emit<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>) {
     for (const f of this.getOrCreate(name)) {
       f(...args);
     }
   }
 
-  on(name: string, callback: any) {
+  on<K extends keyof Events>(name: K, callback: Events[K]) {
     this.getOrCreate(name).push(callback);
   }
 
-  removeListener(name: string, callback: any) {
+  removeListener<K extends keyof Events>(name: K, callback: Events[K]) {
     if (this.events.has(name)) {
       const list = this.events.get(name);
-      const i = list.findIndex((value) => value == callback);
+      const i = list.indexOf(callback);
       if (i >= 0) {
         list.splice(i, 1);
       }
     }
   }
 
-  clearListeners(name: string) {
+  clearListeners<K extends keyof Events>(name: K) {
     this.events.set(name, []);
   }
 
-  private getOrCreate(name: string) {
+  private getOrCreate<K extends keyof Events>(name: K): Events[K][] {
     if (this.events.has(name)) {
-      return this.events.get(name);
+      return this.events.get(name) as Events[K][];
     } else {
-      const array: any[] = [];
+      const array = [] as Events[K][];
       this.events.set(name, array);
       return array;
     }
