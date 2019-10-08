@@ -5,6 +5,7 @@ uniform sampler2D deathTexture;
 varying highp vec2 f_texcoord;
 
 uniform highp float billboardFlash;
+uniform highp float billboardAlpha;
 
 void main() {
   highp vec4 base_color = texture2D(deathTexture, f_texcoord);
@@ -15,5 +16,5 @@ void main() {
   base_color = mix(base_color, vec4(1, 1, 1, 1), billboardFlash);
 
   gl_FragColor = mix_fog(base_color);
-  gl_FragColor.a = base_color.a;
+  gl_FragColor.a *= billboardAlpha;
 }

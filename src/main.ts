@@ -43,6 +43,7 @@ assetMan.defineAssets([
   {name: 'whisper0', path: 'assets/dr2/whisper1.ogg', type: 'audio'},
   {name: 'whisper1', path: 'assets/dr2/whisper2.ogg', type: 'audio'},
   {name: 'whisper2', path: 'assets/dr2/whisper3.ogg', type: 'audio'},
+  {name: 'smoke', path: 'assets/dr2/smoke.png', type: 'image'}
 ]);
 
 assetMan.onReady(function() {

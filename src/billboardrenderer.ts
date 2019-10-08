@@ -8,6 +8,8 @@ export interface BillboardRenderable {
   billboardHeight: number;
   texture: WebGLTexture;
   billboardFlash?: boolean;
+  billboardRotation?: number;
+  billboardAlpha?: number;
 }
 
 export default class BillboardRenderer {
@@ -72,6 +74,8 @@ export default class BillboardRenderer {
       }
       vec3.lerp(this.translation, bb.prevWorldPos, bb.worldPos, alpha);
       mat4.fromTranslation(this.world, this.translation);
+      gl.uniform1f(this.shader.uRotation, bb.billboardRotation !== undefined ? bb.billboardRotation : 0);
+      gl.uniform1f(this.shader.uBillboardAlpha, bb.billboardAlpha !== undefined ? bb.billboardAlpha : 1);
       gl.uniformMatrix4fv(this.shader.uModel, false, this.world);
       gl.uniform2f(this.shader.uScale, bb.billboardWidth, bb.billboardHeight);
       gl.uniform1f(this.shader.uBillboardFlash, bb.billboardFlash ? 1 : 0);

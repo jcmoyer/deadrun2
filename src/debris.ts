@@ -9,6 +9,8 @@ export class DebrisInfo {
   velZ: Function;
   ignoresGravity: boolean;
   size: number;
+  velocityModifier?: (velocity: vec3) => void;
+  lifetime: number;
 }
 
 export const DEBRIS_BONE = new DebrisInfo();
@@ -18,14 +20,24 @@ DEBRIS_BONE.velY = () => Math.random() * 3 - Math.random() * 3;
 DEBRIS_BONE.velZ = () => Math.sin(Math.random() * 2 * Math.PI) * 5;
 DEBRIS_BONE.ignoresGravity = false;
 DEBRIS_BONE.size = 4;
+DEBRIS_BONE.lifetime = 10000;
 
 export const DEBRIS_EMBER = new DebrisInfo();
-DEBRIS_EMBER.textureName = 'ember';
-DEBRIS_EMBER.velX = () => Math.cos(Math.random() * 2 * Math.PI) * 5;
-DEBRIS_EMBER.velY = () => Math.random() * 5 - Math.random() * 5;
-DEBRIS_EMBER.velZ = () => Math.sin(Math.random() * 2 * Math.PI) * 5;
+DEBRIS_EMBER.textureName = 'smoke';
+DEBRIS_EMBER.velX = () => Math.cos(Math.random() * 2 * Math.PI) * 8;
+DEBRIS_EMBER.velY = () => Math.random();
+DEBRIS_EMBER.velZ = () => Math.sin(Math.random() * 2 * Math.PI) * 8;
 DEBRIS_EMBER.ignoresGravity = true;
-DEBRIS_EMBER.size = 8;
+DEBRIS_EMBER.size = 16;
+DEBRIS_EMBER.velocityModifier = (velocity: vec3) => {
+  if (velocity[1] < 0) {
+    velocity[1] = 0;
+  }
+  velocity[0] *= 0.8;
+  velocity[1] += 0.005;
+  velocity[2] *= 0.8;
+};
+DEBRIS_EMBER.lifetime = 5000;
 
 class Debris implements BillboardRenderable {
   prevWorldPos: vec3;
@@ -34,16 +46,22 @@ class Debris implements BillboardRenderable {
   billboardHeight: number;
   texture: WebGLTexture;
   billboardFlash?: boolean;
+  billboardAlpha: number;
 
   velocity: vec3;
   info: DebrisInfo;
 
   timeAlive: number = 0;
 
+  bounceCount = 0;
+  billboardRotation: number = Math.random() * 2 * Math.PI;
+  angularVelocity: number;
+
   constructor(info: DebrisInfo) {
     this.info = info;
     this.billboardWidth = info.size;
     this.billboardHeight = info.size;
+    this.angularVelocity = Math.random() * 2 * Math.PI / 30;
   }
 
   update(gravity: vec3, dt: number) {
@@ -53,6 +71,29 @@ class Debris implements BillboardRenderable {
       vec3.add(this.velocity, this.velocity, gravity);
     }
     this.timeAlive += dt;
+    this.billboardAlpha = (this.info.lifetime - this.timeAlive) / this.info.lifetime;
+    
+    // reflect and dampen
+    const floorY = this.info.size / 2;
+    if (this.worldPos[1] <= floorY) {
+      this.velocity[0] *= 0.2;
+      if (this.bounceCount < 3) {
+        this.velocity[1] = -this.velocity[1] * 0.3;
+        this.angularVelocity *= -0.5;
+        ++this.bounceCount;
+      } else {
+        this.angularVelocity = 0;
+        this.velocity[1] = 0;
+      }
+      this.velocity[2] *= 0.2;
+      this.prevWorldPos[1] = floorY;
+      this.worldPos[1] = floorY;
+    }
+    this.billboardRotation += this.angularVelocity;
+
+    if (this.info.velocityModifier) {
+      this.info.velocityModifier(this.velocity);
+    }
   }
 }
 
@@ -86,7 +127,7 @@ export default class DebrisManager {
     for (let i = this.debris.length - 1; i >= 0; --i) {
       const d = this.debris[i];
       d.update(this.gravity, dt);
-      if (d.timeAlive >= 5000) {
+      if (d.timeAlive >= d.info.lifetime) {
         this.debris.splice(i, 1);
       }
     }

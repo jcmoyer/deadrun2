@@ -10,10 +10,12 @@ export default class Shader extends ShaderProgram {
   uModel: WebGLUniformLocation;
   uScale: WebGLUniformLocation;
   uInterpolation: WebGLUniformLocation;
+  uRotation: WebGLUniformLocation;
   uFogColor: WebGLUniformLocation;
   uFogDensity: WebGLUniformLocation;
   uDeathTexture: WebGLUniformLocation;
   uBillboardFlash: WebGLUniformLocation;
+  uBillboardAlpha: WebGLUniformLocation;
 
   
   constructor(gl: WebGLRenderingContext) {
@@ -31,15 +33,21 @@ uniform mat4 model;
 uniform vec2 scale;
 
 uniform highp float interpolation;
+uniform highp float rotation;
 
 varying highp vec2 f_texcoord;
 
 void main() {
+  highp vec4 rotated_pos = position;
+  highp float p_angle = atan(position.y, position.x);
+  rotated_pos.x = cos(p_angle + rotation);
+  rotated_pos.y = sin(p_angle + rotation);
+
   mat4 mv = view * model;
   mv[0] = vec4(scale.x, 0, 0, 0);
   mv[1] = vec4(0, scale.y, 0, 0);
   mv[2] = vec4(0, 0, 1, 0);
-  gl_Position = projection * mv * position;
+  gl_Position = projection * mv * rotated_pos;
   f_texcoord = texcoord;
 }
 
@@ -61,6 +69,7 @@ uniform sampler2D deathTexture;
 varying highp vec2 f_texcoord;
 
 uniform highp float billboardFlash;
+uniform highp float billboardAlpha;
 
 void main() {
   highp vec4 base_color = texture2D(deathTexture, f_texcoord);
@@ -71,7 +80,7 @@ void main() {
   base_color = mix(base_color, vec4(1, 1, 1, 1), billboardFlash);
 
   gl_FragColor = mix_fog(base_color);
-  gl_FragColor.a = base_color.a;
+  gl_FragColor.a *= billboardAlpha;
 }
 
 `;
