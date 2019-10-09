@@ -1,17 +1,18 @@
+import { loadObj, Mesh } from './objloader';
+
 interface AssetReference {
   name: string;
   path: string;
-  type: 'image' | 'audio' | 'music';
+  type: 'image' | 'audio' | 'music' | 'model';
 }
 
-type AssetData = HTMLImageElement | HTMLAudioElement;
+type AssetData = HTMLImageElement | HTMLAudioElement | Mesh;
 
 class Asset {
   name: string;
   path: string;
-  loaded: boolean;
-  type: 'image' | 'audio' | 'music';
-  data: HTMLImageElement | HTMLAudioElement;
+  type: 'image' | 'audio' | 'music' | 'model';
+  data: HTMLImageElement | HTMLAudioElement | Mesh;
 }
 
 export class AssetManager {
@@ -33,6 +34,8 @@ export class AssetManager {
 
   handleAsset(ref: AssetReference) {
     let rawAsset: AssetData;
+    const asset = new Asset();
+
     if (ref.type === 'audio' || ref.type === 'music') {
       rawAsset = new Audio();
       if (ref.type === 'music') {
@@ -42,17 +45,22 @@ export class AssetManager {
         rawAsset.preload = 'auto';
       }
       // TODO audio loading is async but we may want to preload some small sfx later?
+      rawAsset.addEventListener('load', this.onAssetLoaded.bind(this));
+      asset.data = rawAsset;
     } else if (ref.type === 'image') {
       rawAsset = new Image();
       ++this.pending;
       ++this.assetsToLoadCount;
+      rawAsset.addEventListener('load', this.onAssetLoaded.bind(this));
+      asset.data = rawAsset;
+    } else if (ref.type === 'model') {
+      fetch(ref.path).then(resp => resp.text()).then(text => loadObj(text)).then(m => {
+        asset.data = m;
+        this.onAssetLoaded();
+      });
     }
-    rawAsset.addEventListener('load', this.onAssetLoaded.bind(this));
-    const asset = new Asset();
     asset.name = ref.name;
     asset.path = ref.path;
-    asset.loaded = false;
-    asset.data = rawAsset;
     asset.type = ref.type;
     this.assets.set(ref.name, asset);
   }
@@ -60,7 +68,9 @@ export class AssetManager {
   preload() {
     for (let asset of this.assets.values()) {
       // initiates a browser request to actually load the asset
-      asset.data.src = asset.path;
+      if (asset.data instanceof HTMLImageElement || asset.data instanceof HTMLAudioElement) {
+        asset.data.src = asset.path;
+      }
     }
   }
 
@@ -104,5 +114,13 @@ export class AssetManager {
     } catch {
 
     }
+  }
+
+  getModel(name: string) {
+    const asset = this.assets.get(name);
+    if (asset.type !== 'model') {
+      throw new Error('expected model');
+    }
+    return asset.data as Mesh;
   }
 }
