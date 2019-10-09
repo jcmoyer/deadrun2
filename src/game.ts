@@ -15,12 +15,14 @@ import SkydomeRenderer from './skydome';
 import WorldItem from './worlditem';
 import Timer from './timer';
 import DebrisManager, { DEBRIS_BONE, DEBRIS_EMBER } from './debris';
+import { TileSet } from './levelrenderer2';
 
 import leveldata from "./leveldata";
 import ScreenQuadShader from './shaders/screenquad';
 import Projectile from './projectile';
 import Weapon from './weapon';
 import { sword, spellbook } from './weaponinfo';
+import LevelRenderer2 from './levelrenderer2';
 
 class WhisperPlayer {
   private am: AssetManager;
@@ -106,7 +108,7 @@ export default class Game {
 
   private textureCache: GLTextureCache;
 
-  private levelRenderer: LevelRenderer;
+  private levelRenderer: LevelRenderer2;
   private viewWeaponRenderer: ViewWeaponRenderer;
 
   private bbRenderables: BillboardRenderable[] = [];
@@ -119,6 +121,8 @@ export default class Game {
   private musicFadeTimer: Timer = null;
   private debrisMan: DebrisManager;
   private whisperPlayer: WhisperPlayer;
+
+  private tileset: TileSet;
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -137,8 +141,7 @@ export default class Game {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    this.levelRenderer = new LevelRenderer(this.gl);
-    this.levelRenderer.setExitTexture(this.textureCache.getTexture('exitfloor'));
+    this.levelRenderer = new LevelRenderer2(this.gl);
 
     this.bbRenderer = new BillboardRenderer(gl);
     
@@ -170,6 +173,12 @@ export default class Game {
     this.debrisMan = new DebrisManager(this.textureCache);
     this.whisperPlayer = new WhisperPlayer(this.assetMan);
     
+    this.tileset = new TileSet();
+    this.tileset.setMeshTexture('_', this.assetMan.getModel('tile5'), this.textureCache.getTexture('overgrown_dirt'));
+    this.tileset.setMeshTexture('#', this.assetMan.getModel('tile0'), this.textureCache.getTexture('overgrown_wall'));
+    this.tileset.setMeshTexture('T', this.assetMan.getModel('tree'), this.textureCache.getTexture('ashenwood'));
+    this.tileset.setMeshTexture('W', this.assetMan.getModel('postwall_m'), this.textureCache.getTexture('postwall_t'));
+    this.tileset.setMeshTexture('B', this.assetMan.getModel('gravehouse'), this.textureCache.getTexture('postwall_t'));
     this.setLevel(new Level(leveldata[this.levelID]));
   }
 
@@ -494,9 +503,6 @@ export default class Game {
 
     this.level = level;
 
-    this.levelRenderer.setWallTexture(this.textureCache.getTexture(level.wall));
-    this.levelRenderer.setFloorTexture(this.textureCache.getTexture(level.floor));
-
     const spawn = this.level.tilemap.getSpawnTile();
     this.player.setWorldPos(
       spawn.x * TILE_SIZE,
@@ -547,7 +553,7 @@ export default class Game {
       this.level.fogColor[3]
     );
 
-    this.levelRenderer.setLevel(this.level);
+    this.levelRenderer.setLevel(this.level, this.tileset);
 
     if (this.level.music) {
       this.stopMusic();
