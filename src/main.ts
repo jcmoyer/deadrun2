@@ -55,6 +55,8 @@ assetMan.defineAssets([
   {name: 'postwall_m', path: 'assets/dr2/meshes/postwall.obj', type: 'model'},
 
   {name: 'gravehouse', path: 'assets/dr2/meshes/gravehouse.obj', type: 'model'},
+
+  {name: 'skydome', path: 'assets/dr2/meshes/skydome.obj', type: 'model'},
 ]);
 
 assetMan.onReady(function() {

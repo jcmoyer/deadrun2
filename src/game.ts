@@ -167,7 +167,7 @@ export default class Game {
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(orthoVerts), gl.STATIC_DRAW);
 
-    this.skydomeRenderer = new SkydomeRenderer(gl);
+    this.skydomeRenderer = new SkydomeRenderer(gl, this.assetMan.getModel('skydome'));
 
     this.viewWeaponRenderer = new ViewWeaponRenderer(gl);
     this.debrisMan = new DebrisManager(this.textureCache);

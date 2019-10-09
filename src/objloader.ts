@@ -47,3 +47,28 @@ export function loadObj(data: string): Mesh {
     vertices, texCoords, faces
   };
 }
+
+export function buildInterleavedMesh(mesh: Mesh): number[] {
+  const meshVerts: number[] = [];
+  for (let i = 0; i < mesh.faces.length; ++i) {
+    const face = mesh.faces[i];
+    meshVerts.push(mesh.vertices[face[0][0]][0]);
+    meshVerts.push(mesh.vertices[face[0][0]][1]);
+    meshVerts.push(mesh.vertices[face[0][0]][2]);
+    meshVerts.push(mesh.texCoords[face[0][1]][0]);
+    meshVerts.push(mesh.texCoords[face[0][1]][1]);
+
+    meshVerts.push(mesh.vertices[face[1][0]][0]);
+    meshVerts.push(mesh.vertices[face[1][0]][1]);
+    meshVerts.push(mesh.vertices[face[1][0]][2]);
+    meshVerts.push(mesh.texCoords[face[1][1]][0]);
+    meshVerts.push(mesh.texCoords[face[1][1]][1]);
+
+    meshVerts.push(mesh.vertices[face[2][0]][0]);
+    meshVerts.push(mesh.vertices[face[2][0]][1]);
+    meshVerts.push(mesh.vertices[face[2][0]][2]);
+    meshVerts.push(mesh.texCoords[face[2][1]][0]);
+    meshVerts.push(mesh.texCoords[face[2][1]][1]);
+  }
+  return meshVerts;
+}

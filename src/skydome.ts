@@ -1,23 +1,20 @@
 import SkyboxShader from './shaders/skybox';
 import { mat4 } from 'gl-matrix';
-import SkydomeModel from './models/skydome';
+import { Mesh, buildInterleavedMesh } from './objloader';
 
 export default class SkydomeRenderer {
   private gl: WebGLRenderingContext;
-  
+  private mesh: Mesh;
   private shader: SkyboxShader;
+  private buffer: WebGLBuffer;
 
-  private cubeBuffer: WebGLBuffer;
-
-  constructor(gl: WebGLRenderingContext) {
+  constructor(gl: WebGLRenderingContext, mesh: Mesh) {
     this.gl = gl;
+    this.mesh = mesh;
 
-    const cubeVerts = new Float32Array(SkydomeModel);
-
-    this.cubeBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeBuffer);
-
-    gl.bufferData(gl.ARRAY_BUFFER, cubeVerts, gl.STATIC_DRAW);
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(buildInterleavedMesh(mesh)), gl.STATIC_DRAW);
 
     this.shader = new SkyboxShader(gl);
   }
@@ -26,7 +23,7 @@ export default class SkydomeRenderer {
     const gl = this.gl;
     gl.depthMask(false);
     this.shader.use();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
     gl.enableVertexAttribArray(this.shader.aPosition);
     gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 20, 0);
@@ -49,7 +46,7 @@ export default class SkydomeRenderer {
     gl.uniform4fv(this.shader.uFogColor, fogColor);
     gl.uniform1f(this.shader.uFogDensity, fogDensity);
 
-    gl.drawArrays(gl.TRIANGLES, 0, SkydomeModel.length / 5);
+    gl.drawArrays(gl.TRIANGLES, 0, this.mesh.faces.length * 3);
 
     gl.depthMask(true);
 
