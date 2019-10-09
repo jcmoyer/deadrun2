@@ -16,12 +16,13 @@ export default class SkydomeRenderer {
 
     this.cubeBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.cubeBuffer);
+
     gl.bufferData(gl.ARRAY_BUFFER, cubeVerts, gl.STATIC_DRAW);
 
     this.shader = new SkyboxShader(gl);
   }
 
-  render(view: mat4, proj: mat4, sky0: WebGLTexture, sky1: WebGLTexture, time: number) {
+  render(view: mat4, proj: mat4, sky0: WebGLTexture, sky1: WebGLTexture, time: number, fogColor: number[], fogDensity: number) {
     const gl = this.gl;
     gl.depthMask(false);
     this.shader.use();
@@ -44,6 +45,9 @@ export default class SkydomeRenderer {
     gl.uniform1i(this.shader.uSky1, 1);
 
     gl.uniform1f(this.shader.uTime, time);
+
+    gl.uniform4fv(this.shader.uFogColor, fogColor);
+    gl.uniform1f(this.shader.uFogDensity, fogDensity);
 
     gl.drawArrays(gl.TRIANGLES, 0, SkydomeModel.length / 5);
 

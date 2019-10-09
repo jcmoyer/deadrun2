@@ -1,3 +1,5 @@
+#include "fog.glsl"
+
 varying highp vec2 f_texcoord;
 
 uniform sampler2D sky0;
@@ -21,7 +23,7 @@ void main() {
   
   highp vec4 final_color = vec4(mix(base.xyz, overlay2.xyz, overlay2.a), 1.0);
   final_color = vec4(mix(final_color.xyz, overlay.xyz, overlay.a), 1.0);
-  gl_FragColor = final_color;
+  gl_FragColor = mix_fog(final_color);
 
   //gl_FragColor = vec4(mix(base.xyz, overlay.xyz, overlay.a), 1.0);
 }

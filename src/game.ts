@@ -321,7 +321,7 @@ export default class Game {
     this.skydomeRenderer.render(playerView, this.projMatrix,
       this.textureCache.getTexture('sky0'),
       this.textureCache.getTexture('sky1'),
-      this.time);
+      this.time, this.level.fogColor, this.level.fogDensity);
 
     this.levelRenderer.render(this.projMatrix, playerView);
 

@@ -7,6 +7,8 @@ export default class Shader extends ShaderProgram {
 
   uView: WebGLUniformLocation;
   uProjection: WebGLUniformLocation;
+  uFogColor: WebGLUniformLocation;
+  uFogDensity: WebGLUniformLocation;
   uSky0: WebGLUniformLocation;
   uSky1: WebGLUniformLocation;
   uTime: WebGLUniformLocation;
@@ -35,6 +37,17 @@ void main() {
 
 `;
   static fsSource = `
+uniform highp vec4  fogColor;
+uniform highp float fogDensity;
+
+highp vec4 mix_fog(highp vec4 base_color) {
+  highp float dist = gl_FragCoord.z / gl_FragCoord.w;
+  highp float fog  = 1.0 / exp(dist * fogDensity) * 2.0;
+  fog = clamp(fog, 0.0, 1.0);
+  return mix(fogColor, base_color, fog);
+}
+
+
 varying highp vec2 f_texcoord;
 
 uniform sampler2D sky0;
@@ -58,7 +71,7 @@ void main() {
   
   highp vec4 final_color = vec4(mix(base.xyz, overlay2.xyz, overlay2.a), 1.0);
   final_color = vec4(mix(final_color.xyz, overlay.xyz, overlay.a), 1.0);
-  gl_FragColor = final_color;
+  gl_FragColor = mix_fog(final_color);
 
   //gl_FragColor = vec4(mix(base.xyz, overlay.xyz, overlay.a), 1.0);
 }
