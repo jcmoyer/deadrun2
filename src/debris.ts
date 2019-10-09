@@ -16,7 +16,7 @@ export class DebrisInfo {
 export const DEBRIS_BONE = new DebrisInfo();
 DEBRIS_BONE.textureName = 'bone';
 DEBRIS_BONE.velX = () => Math.cos(Math.random() * 2 * Math.PI) * 5;
-DEBRIS_BONE.velY = () => Math.random() * 3 - Math.random() * 3;
+DEBRIS_BONE.velY = () => Math.random() * 3;
 DEBRIS_BONE.velZ = () => Math.sin(Math.random() * 2 * Math.PI) * 5;
 DEBRIS_BONE.ignoresGravity = false;
 DEBRIS_BONE.size = 4;
@@ -107,7 +107,8 @@ export default class DebrisManager {
     this.gravity = vec3.fromValues(0, -1, 0);
   }
 
-  spawnMulti(info: DebrisInfo, world: vec3, n: number) {
+  spawnMulti(info: DebrisInfo, world: vec3, n: number, extraForce?: number) {
+    extraForce = extraForce === undefined ? 1 : extraForce;
     const texture = this.textureProvider.getTexture(info.textureName);
     for (let i = 0; i < n; ++i) {
       const d = new Debris(info);
@@ -115,9 +116,9 @@ export default class DebrisManager {
       d.prevWorldPos = vec3.clone(world);
       d.texture = texture;
       d.velocity = vec3.fromValues(
-        info.velX(),
-        info.velY(),
-        info.velZ()
+        info.velX() * extraForce,
+        info.velY() * extraForce,
+        info.velZ() * extraForce
       );
       this.debris.push(d);
     }

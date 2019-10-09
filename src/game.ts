@@ -684,7 +684,7 @@ export default class Game {
         enemy.getWorldX(), 16, enemy.getWorldZ(), 8);
       if (collide) {
         enemy.hurt(10);
-        this.debrisMan.spawnMulti(DEBRIS_BONE, enemy.worldPos, 10);
+        this.debrisMan.spawnMulti(DEBRIS_BONE, enemy.worldPos, 5);
         this.assetMan.tryPlayAudio('bonethud');
         if (!enemy.alive) this.enemies.splice(i, 1);
       }
@@ -724,7 +724,7 @@ export default class Game {
       const enemy = this.enemies[j];
       if (collideSS(pos[0], pos[1], pos[2], radius, enemy.worldPos[0], enemy.worldPos[1], enemy.worldPos[2], 10)) {
         enemy.hurt(damage);
-        this.debrisMan.spawnMulti(DEBRIS_BONE, enemy.worldPos, 3);
+        this.debrisMan.spawnMulti(DEBRIS_BONE, enemy.worldPos, 10, 2);
         this.debrisMan.spawnMulti(DEBRIS_EMBER, enemy.worldPos, 10);
         if (!enemy.alive) {
           this.enemies.splice(j, 1);
