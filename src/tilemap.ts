@@ -11,6 +11,7 @@ export class Tile {
   y: number;
 
   flags: number = 0;
+  char: string;
 }
 
 export class Tilemap {
@@ -156,6 +157,8 @@ export function loadTilemap(data: string) {
       if (isExit(lines[y][x])) {
         tilemap.setFlag(x, y, EXIT);
       }
+
+      tilemap.getTile(x, y).char = lines[y][x];
     }
   }
 
