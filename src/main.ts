@@ -34,7 +34,7 @@ assetMan.defineAssets([
   {name: 'fireball_launch', path: 'assets/dr2/fireball_launch.ogg', type: 'audio'},
   {name: 'fireball_channel', path: 'assets/dr2/fireball_channel.ogg', type: 'audio'},
   {name: 'fireball_hit', path: 'assets/dr2/fireball_hit.ogg', type: 'audio'},
-  {name: 'bone', path: 'assets/dr2/bone.png', type: 'image'},
+  {name: 'bone', path: 'assets/dr2/bone2.png', type: 'image'},
   {name: 'ember', path: 'assets/dr2/ember.png', type: 'image'},
   {name: 'death', path: 'assets/dr2/death2.png', type: 'image'},
   {name: 'overgrown_wall', path: 'assets/dr2/overgrown_wall.png', type: 'image'},
@@ -43,7 +43,18 @@ assetMan.defineAssets([
   {name: 'whisper0', path: 'assets/dr2/whisper1.ogg', type: 'audio'},
   {name: 'whisper1', path: 'assets/dr2/whisper2.ogg', type: 'audio'},
   {name: 'whisper2', path: 'assets/dr2/whisper3.ogg', type: 'audio'},
-  {name: 'smoke', path: 'assets/dr2/smoke.png', type: 'image'}
+  {name: 'smoke', path: 'assets/dr2/smoke.png', type: 'image'},
+  {name: 'tile', path: 'assets/dr2/tower.obj', type: 'model'},
+  {name: 'tile5', path: 'assets/dr2/meshes/tile5.obj', type: 'model'},
+  {name: 'tile0', path: 'assets/dr2/meshes/tile0.obj', type: 'model'},
+
+  {name: 'ashenwood', path: 'assets/dr2/ashenwood512.png', type: 'image'},
+  {name: 'tree', path: 'assets/dr2/meshes/tree.obj', type: 'model'},
+
+  {name: 'postwall_t', path: 'assets/dr2/meshes/postwall.png', type: 'image'},
+  {name: 'postwall_m', path: 'assets/dr2/meshes/postwall.obj', type: 'model'},
+
+  {name: 'gravehouse', path: 'assets/dr2/meshes/gravehouse.obj', type: 'model'},
 ]);
 
 assetMan.onReady(function() {
