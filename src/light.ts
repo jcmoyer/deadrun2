@@ -1,7 +1,10 @@
 export default class LightList {
-  private lightData: Float32Array = new Float32Array(16 * 4);
+  private lightData: Float32Array;
+  private lightCount: number;
 
-  constructor() {
+  constructor(lightCount: number) {
+    this.lightCount = lightCount;
+    this.lightData = new Float32Array(lightCount * 4);
   }
 
   setLight(id: number, x: number, y: number, z: number, radius: number) {
