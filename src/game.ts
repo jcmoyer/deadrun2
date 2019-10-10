@@ -10,7 +10,7 @@ import ExitEmitter from './exitemitter';
 import { TILE_SIZE, toMapX, toMapY, Level } from './level';
 import LevelRenderer from './levelrenderer';
 import ViewWeaponRenderer from './viewweaponrenderer';
-import { collideSS } from './math';
+import { collideSS, lerp } from './math';
 import SkydomeRenderer from './skydome';
 import WorldItem from './worlditem';
 import Timer from './timer';
@@ -23,6 +23,7 @@ import Projectile from './projectile';
 import Weapon from './weapon';
 import { sword, spellbook } from './weaponinfo';
 import LevelRenderer2 from './levelrenderer2';
+import LightList from './light';
 
 class WhisperPlayer {
   private am: AssetManager;
@@ -123,6 +124,7 @@ export default class Game {
   private whisperPlayer: WhisperPlayer;
 
   private tileset: TileSet;
+  private lightList: LightList = new LightList(16);
 
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
@@ -332,11 +334,21 @@ export default class Game {
       this.textureCache.getTexture('sky1'),
       this.time, this.level.fogColor, this.level.fogDensity);
 
-    this.levelRenderer.render(this.projMatrix, playerView);
+    this.lightList.clearLights();
+    for (let i = 0; i < Math.min(16, this.projectiles.length); ++i) {
+      const p = this.projectiles[i];
+      this.lightList.setLight(0,
+        lerp(p.prevWorldPos[0], p.worldPos[0], alpha),
+        lerp(p.prevWorldPos[1], p.worldPos[1], alpha),
+        lerp(p.prevWorldPos[2], p.worldPos[2], alpha),
+        64 + Math.sin(Date.now() / 40) * 16);
+    }
+
+    this.levelRenderer.render(this.projMatrix, playerView, this.lightList);
 
     this.exitEmitter.render(playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
 
-    this.bbRenderer.render(this.bbRenderables, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha);
+    this.bbRenderer.render(this.bbRenderables, playerView, this.projMatrix, this.level.fogColor, this.level.fogDensity, alpha, this.lightList);
 
     if (this.player.equippedWeapon) {
       this.viewWeaponRenderer.render(this.player.equippedWeapon, this.textureCache);
