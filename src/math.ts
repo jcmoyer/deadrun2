@@ -4,6 +4,10 @@ export function clamp(x: number, min: number, max: number) {
   return x;
 }
 
+export function lerp(x0: number, x1: number, a: number): number {
+  return x0 + (x1 - x0) * a;
+}
+
 // sphere-sphere collision
 export function collideSS(x0: number, y0: number, z0: number, r0: number, x1: number, y1: number, z1: number, r1: number) {
   const r_2 = r0 * r0 + r1 * r1;
