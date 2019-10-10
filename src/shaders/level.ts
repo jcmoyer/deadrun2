@@ -10,6 +10,7 @@ export default class Shader extends ShaderProgram {
   uProjection: WebGLUniformLocation;
   uFogColor: WebGLUniformLocation;
   uFogDensity: WebGLUniformLocation;
+  uLights: WebGLUniformLocation;
   uWallTexture: WebGLUniformLocation;
 
   
@@ -29,11 +30,13 @@ uniform mat4 projection;
 
 varying highp float f_shade;
 varying vec2        f_texcoord;
+varying vec4        f_position;
 
 void main() {
   gl_Position = projection * view * position;
   f_shade     = shade;
   f_texcoord  = texcoord;
+  f_position  = position;
 }
 
 `;
@@ -48,15 +51,31 @@ highp vec4 mix_fog(highp vec4 base_color) {
   return mix(fogColor, base_color, fog);
 }
 
+uniform highp vec4 lights[16];
+
+highp vec3 mixLight(highp vec3 fragment, highp vec3 position) {
+  for (int i = 0; i < 16; ++i) {
+    highp float d = distance(lights[i].xyz, position);
+    highp float a = (lights[i].w - d) / (lights[i].w + 0.001);
+    a = clamp(a, 0.0, 1.0);
+    fragment = mix(fragment, vec3(0.85, 0.55, 0.18), a);
+  }
+  return fragment;
+}
+
 
 varying highp float f_shade;
 varying highp vec2  f_texcoord;
+varying highp vec4  f_position;
 
 uniform sampler2D   wallTexture;
+
+
 
 void main() {
   highp vec4 base_color = texture2D(wallTexture, f_texcoord);
   gl_FragColor = mix_fog(base_color);
+  gl_FragColor.xyz = mixLight(gl_FragColor.xyz, f_position.xyz);
 }
 
 `;

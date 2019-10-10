@@ -1,5 +1,6 @@
 import { mat4, vec3 } from "gl-matrix";
 import BillboardShader from './shaders/billboard';
+import LightList from "./light";
 
 export interface BillboardRenderable {
   prevWorldPos: vec3;
@@ -41,7 +42,7 @@ export default class BillboardRenderer {
     gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
   }
 
-  render(bbs: BillboardRenderable[], view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number) {
+  render(bbs: BillboardRenderable[], view: mat4, proj: mat4, fogColor: number[], fogDensity: number, alpha: number, lights: LightList) {
     if (bbs.length === 0) {
       return;
     }
@@ -62,6 +63,7 @@ export default class BillboardRenderer {
     gl.uniform1f(this.shader.uInterpolation, alpha);
     gl.uniform4fv(this.shader.uFogColor, fogColor);
     gl.uniform1f(this.shader.uFogDensity, fogDensity);
+    gl.uniform4fv(this.shader.uLights, lights.getLightArray());
 
     let lastTexture = bbs[0].texture;
     gl.bindTexture(gl.TEXTURE_2D, lastTexture);

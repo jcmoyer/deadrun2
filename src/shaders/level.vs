@@ -8,9 +8,11 @@ uniform mat4 projection;
 
 varying highp float f_shade;
 varying vec2        f_texcoord;
+varying vec4        f_position;
 
 void main() {
   gl_Position = projection * view * position;
   f_shade     = shade;
   f_texcoord  = texcoord;
+  f_position  = position;
 }

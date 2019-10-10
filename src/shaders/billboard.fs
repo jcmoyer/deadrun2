@@ -1,8 +1,10 @@
 #include "fog.glsl"
+#include "light.glsl"
 
 uniform sampler2D deathTexture;
 
 varying highp vec2 f_texcoord;
+varying highp vec4 f_position;
 
 uniform highp float billboardFlash;
 uniform highp float billboardAlpha;
@@ -17,4 +19,5 @@ void main() {
 
   gl_FragColor = mix_fog(base_color);
   gl_FragColor.a *= billboardAlpha;
+  gl_FragColor.xyz = mixLight(gl_FragColor.xyz, f_position.xyz);
 }

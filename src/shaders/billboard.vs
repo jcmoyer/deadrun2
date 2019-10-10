@@ -10,6 +10,7 @@ uniform highp float interpolation;
 uniform highp float rotation;
 
 varying highp vec2 f_texcoord;
+varying highp vec4 f_position;
 
 void main() {
   highp vec4 rotated_pos = position;
@@ -23,4 +24,6 @@ void main() {
   mv[2] = vec4(0, 0, 1, 0);
   gl_Position = projection * mv * rotated_pos;
   f_texcoord = texcoord;
+
+  f_position = model * rotated_pos;
 }

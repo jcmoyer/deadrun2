@@ -13,6 +13,7 @@ export default class Shader extends ShaderProgram {
   uRotation: WebGLUniformLocation;
   uFogColor: WebGLUniformLocation;
   uFogDensity: WebGLUniformLocation;
+  uLights: WebGLUniformLocation;
   uDeathTexture: WebGLUniformLocation;
   uBillboardFlash: WebGLUniformLocation;
   uBillboardAlpha: WebGLUniformLocation;
@@ -36,6 +37,7 @@ uniform highp float interpolation;
 uniform highp float rotation;
 
 varying highp vec2 f_texcoord;
+varying highp vec4 f_position;
 
 void main() {
   highp vec4 rotated_pos = position;
@@ -49,6 +51,8 @@ void main() {
   mv[2] = vec4(0, 0, 1, 0);
   gl_Position = projection * mv * rotated_pos;
   f_texcoord = texcoord;
+
+  f_position = model * rotated_pos;
 }
 
 `;
@@ -63,10 +67,23 @@ highp vec4 mix_fog(highp vec4 base_color) {
   return mix(fogColor, base_color, fog);
 }
 
+uniform highp vec4 lights[16];
+
+highp vec3 mixLight(highp vec3 fragment, highp vec3 position) {
+  for (int i = 0; i < 16; ++i) {
+    highp float d = distance(lights[i].xyz, position);
+    highp float a = (lights[i].w - d) / (lights[i].w + 0.001);
+    a = clamp(a, 0.0, 1.0);
+    fragment = mix(fragment, vec3(0.85, 0.55, 0.18), a);
+  }
+  return fragment;
+}
+
 
 uniform sampler2D deathTexture;
 
 varying highp vec2 f_texcoord;
+varying highp vec4 f_position;
 
 uniform highp float billboardFlash;
 uniform highp float billboardAlpha;
@@ -81,6 +98,7 @@ void main() {
 
   gl_FragColor = mix_fog(base_color);
   gl_FragColor.a *= billboardAlpha;
+  gl_FragColor.xyz = mixLight(gl_FragColor.xyz, f_position.xyz);
 }
 
 `;

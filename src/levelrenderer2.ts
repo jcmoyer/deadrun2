@@ -2,6 +2,7 @@ import { Level, TILE_SIZE } from "./level";
 import { mat4 } from "gl-matrix";
 import LevelShader from './shaders/level';
 import { Mesh, buildInterleavedMesh } from "./objloader";
+import LightList from "./light";
 
 interface MeshTexturePair {
   mesh: Mesh;
@@ -80,12 +81,7 @@ export default class LevelRenderer2 {
           tileMesh[i + 2] += worldZ;
         }
 
-        let destinationSet: number[];
-        if (vertexSets.has(meshTexture.texture)) {
-          destinationSet = vertexSets.get(meshTexture.texture);
-        } else {
-          destinationSet = [];
-        }
+        let destinationSet = vertexSets.get(meshTexture.texture) || [];
         destinationSet = destinationSet.concat(tileMesh);
         vertexSets.set(meshTexture.texture, destinationSet);
         totalVertexCount += tileMesh.length / 5;
@@ -109,7 +105,7 @@ export default class LevelRenderer2 {
     }
   }
 
-  render(proj: mat4, view: mat4) {
+  render(proj: mat4, view: mat4, lights: LightList) {
     const gl = this.gl;
 
     this.shader.use();
@@ -125,6 +121,8 @@ export default class LevelRenderer2 {
 
     gl.vertexAttribPointer(this.shader.aPosition, 3, gl.FLOAT, false, 20, 0);
     gl.vertexAttribPointer(this.shader.aTexcoord, 2, gl.FLOAT, false, 20, 12);
+
+    gl.uniform4fv(this.shader.uLights, lights.getLightArray());
 
     for (const span of this.spans) {
       gl.bindTexture(gl.TEXTURE_2D, span.texture);
