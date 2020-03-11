@@ -240,17 +240,13 @@ export default class Game {
 
     this.pickupItems();
 
-    // TODO: clean this up by converting player worldpos to vec3...
-    const playerWorld = vec3.create();
-    vec3.set(playerWorld, this.player.getWorldX(), 16, this.player.getWorldZ());
-
     const playerMapX = toMapX(this.player.getWorldX());
     const playerMapY = toMapY(this.player.getWorldZ());
 
     const exitTile = this.level.tilemap.getExitTile();
 
     for (let death of this.enemies) {
-      if (vec3.dist(death.worldPos, playerWorld) <= 16) {
+      if (vec3.dist(death.worldPos, this.player.pos) <= 16) {
         this.killPlayer();
         return;
       }
@@ -279,7 +275,7 @@ export default class Game {
     this.debrisMan.submitToRenderList(this.bbRenderables);
 
     this.bbRenderables.sort((a, b) => {
-      return vec3.dist(playerWorld, b.worldPos) - vec3.dist(playerWorld, a.worldPos);
+      return vec3.dist(this.player.pos, b.worldPos) - vec3.dist(this.player.pos, a.worldPos);
     });
 
     this.exitEmitter.update();
