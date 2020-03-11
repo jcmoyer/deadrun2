@@ -1,74 +1,69 @@
 import { AssetManager } from './assetmanager';
 import Game from './game';
+import { loadResourceIndexFromArray } from './core/resource';
 
 const mainMenu = document.getElementById('main-menu-container') as HTMLDivElement;
 const playGameButton = document.getElementById('play-game') as HTMLButtonElement;
 const loadingText = document.getElementById('loading');
 const mainCanvas = document.getElementById('canvas') as HTMLCanvasElement;
 
-const assetMan = new AssetManager();
-
-assetMan.defineAssets([
-  {name: 'placeholder', path: 'assets/dr2/placeholder.png', type: 'image'},
-  {name: 'exitfloor', path: 'assets/dr2/overgrown_dirt.png', type: 'image'},
-  {name: 'levelcomplete', path: 'assets/dr2/levelcomplete.ogg', type: 'audio'},
-  {name: 'playerdeath', path: 'assets/dr2/playerdeath.ogg', type: 'audio'},
-  {name: 'track0', path: 'assets/dr2/Track1_0.ogg', type: 'music'},
-  {name: 'track1', path: 'assets/dr2/Track1_1.ogg', type: 'music'},
-  {name: 'track2', path: 'assets/dr2/Track1_2.ogg', type: 'music'},
-  {name: 'track3', path: 'assets/dr2/Track1_3.ogg', type: 'music'},
-  {name: 'spellbook_v_idle', path: 'assets/dr2/hand1.png', type: 'image'},
-  {name: 'spellbook_v_action', path: 'assets/dr2/hand3.png', type: 'image'},
-  {name: 'fireball', path: 'assets/dr2/fireball.png', type: 'image'},
-  {name: 'shoot', path: 'assets/dr2/shoot.ogg', type: 'audio'},
-  {name: 'sky0', path: 'assets/dr2/sky0.png', type: 'image'},
-  {name: 'sky1', path: 'assets/dr2/sky1.png', type: 'image'},
-  {name: 'sword', path: 'assets/dr2/sword_world.png', type: 'image'},
-  {name: 'spellbook', path: 'assets/dr2/spellbook_world.png', type: 'image'},
-  {name: 'mana', path: 'assets/dr2/mana_world.png', type: 'image'},
-  {name: 'pickup', path: 'assets/dr2/pickup.ogg', type: 'audio'},
-  {name: 'sword_v_idle', path: 'assets/dr2/sword1.png', type: 'image'},
-  {name: 'sword_v_action', path: 'assets/dr2/sword2.png', type: 'image'},
-  {name: 'swing', path: 'assets/dr2/swing3.ogg', type: 'audio'},
-  {name: 'bonethud', path: 'assets/dr2/bonethud.ogg', type: 'audio'},
-  {name: 'fireball_launch', path: 'assets/dr2/fireball_launch.ogg', type: 'audio'},
-  {name: 'fireball_channel', path: 'assets/dr2/fireball_channel.ogg', type: 'audio'},
-  {name: 'fireball_hit', path: 'assets/dr2/fireball_hit.ogg', type: 'audio'},
-  {name: 'bone', path: 'assets/dr2/bone2.png', type: 'image'},
-  {name: 'ember', path: 'assets/dr2/ember.png', type: 'image'},
-  {name: 'death', path: 'assets/dr2/death2.png', type: 'image'},
-  {name: 'overgrown_wall', path: 'assets/dr2/overgrown_wall.png', type: 'image'},
-  {name: 'overgrown_dirt', path: 'assets/dr2/overgrown_dirt.png', type: 'image'},
+const resources = loadResourceIndexFromArray([
+  {name: 'placeholder', path: 'assets/dr2/placeholder.png'},
+  {name: 'exitfloor', path: 'assets/dr2/overgrown_dirt.png'},
+  {name: 'levelcomplete', path: 'assets/dr2/levelcomplete.ogg'},
+  {name: 'playerdeath', path: 'assets/dr2/playerdeath.ogg'},
+  {name: 'MUS_track0', path: 'assets/dr2/Track1_0.ogg'},
+  {name: 'MUS_track1', path: 'assets/dr2/Track1_1.ogg'},
+  {name: 'MUS_track2', path: 'assets/dr2/Track1_2.ogg'},
+  {name: 'MUS_track3', path: 'assets/dr2/Track1_3.ogg'},
+  {name: 'spellbook_v_idle', path: 'assets/dr2/hand1.png'},
+  {name: 'spellbook_v_action', path: 'assets/dr2/hand3.png'},
+  {name: 'fireball', path: 'assets/dr2/fireball.png'},
+  {name: 'shoot', path: 'assets/dr2/shoot.ogg'},
+  {name: 'sky0', path: 'assets/dr2/sky0.png'},
+  {name: 'sky1', path: 'assets/dr2/sky1.png'},
+  {name: 'sword', path: 'assets/dr2/sword_world.png'},
+  {name: 'spellbook', path: 'assets/dr2/spellbook_world.png'},
+  {name: 'mana', path: 'assets/dr2/mana_world.png'},
+  {name: 'pickup', path: 'assets/dr2/pickup.ogg'},
+  {name: 'sword_v_idle', path: 'assets/dr2/sword1.png'},
+  {name: 'sword_v_action', path: 'assets/dr2/sword2.png'},
+  {name: 'swing', path: 'assets/dr2/swing3.ogg'},
+  {name: 'bonethud', path: 'assets/dr2/bonethud.ogg'},
+  {name: 'fireball_launch', path: 'assets/dr2/fireball_launch.ogg'},
+  {name: 'fireball_channel', path: 'assets/dr2/fireball_channel.ogg'},
+  {name: 'fireball_hit', path: 'assets/dr2/fireball_hit.ogg'},
+  {name: 'bone', path: 'assets/dr2/bone2.png'},
+  {name: 'ember', path: 'assets/dr2/ember.png'},
+  {name: 'death', path: 'assets/dr2/death2.png'},
+  {name: 'overgrown_wall', path: 'assets/dr2/overgrown_wall.png'},
+  {name: 'overgrown_dirt', path: 'assets/dr2/overgrown_dirt.png'},
   // must be 0 indexed
-  {name: 'whisper0', path: 'assets/dr2/whisper1.ogg', type: 'audio'},
-  {name: 'whisper1', path: 'assets/dr2/whisper2.ogg', type: 'audio'},
-  {name: 'whisper2', path: 'assets/dr2/whisper3.ogg', type: 'audio'},
-  {name: 'smoke', path: 'assets/dr2/smoke.png', type: 'image'},
-  {name: 'tile', path: 'assets/dr2/tower.obj', type: 'model'},
-  {name: 'tile5', path: 'assets/dr2/meshes/tile5.obj', type: 'model'},
-  {name: 'tile0', path: 'assets/dr2/meshes/tile0.obj', type: 'model'},
+  {name: 'whisper0', path: 'assets/dr2/whisper1.ogg'},
+  {name: 'whisper1', path: 'assets/dr2/whisper2.ogg'},
+  {name: 'whisper2', path: 'assets/dr2/whisper3.ogg'},
+  {name: 'smoke', path: 'assets/dr2/smoke.png'},
+  {name: 'tile', path: 'assets/dr2/tower.obj'},
+  {name: 'tile5', path: 'assets/dr2/meshes/tile5.obj'},
+  {name: 'tile0', path: 'assets/dr2/meshes/tile0.obj'},
 
-  {name: 'ashenwood', path: 'assets/dr2/ashenwood512.png', type: 'image'},
-  {name: 'tree', path: 'assets/dr2/meshes/tree.obj', type: 'model'},
+  {name: 'ashenwood', path: 'assets/dr2/ashenwood512.png'},
+  {name: 'tree', path: 'assets/dr2/meshes/tree.obj'},
 
-  {name: 'postwall_t', path: 'assets/dr2/meshes/postwall.png', type: 'image'},
-  {name: 'postwall_m', path: 'assets/dr2/meshes/postwall.obj', type: 'model'},
+  {name: 'postwall_t', path: 'assets/dr2/meshes/postwall.png'},
+  {name: 'postwall_m', path: 'assets/dr2/meshes/postwall.obj'},
 
-  {name: 'gravehouse', path: 'assets/dr2/meshes/gravehouse.obj', type: 'model'},
+  {name: 'gravehouse', path: 'assets/dr2/meshes/gravehouse.obj'},
 
-  {name: 'skydome', path: 'assets/dr2/meshes/skydome.obj', type: 'model'},
+  {name: 'skydome', path: 'assets/dr2/meshes/skydome.obj'},
 ]);
 
-assetMan.onReady(function() {
+const assetMan = new AssetManager(resources);
+
+assetMan.preload().then(() => {
   playGameButton.style.display = 'block';
   loadingText.style.display = 'none';
 });
-
-assetMan.onProgress(function(current, total) {
-  loadingText.textContent = `Loading...(${current}/${total})`;
-});
-
-assetMan.preload();
 
 function onWinGame() {
   const winContainer = document.getElementById('game-win-container') as HTMLDivElement;

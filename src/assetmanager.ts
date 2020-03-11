@@ -1,126 +1,77 @@
 import { loadObj, Mesh } from './objloader';
+import { ResourceManager, ResourceIndex } from './core/resource';
+import { vec3 } from 'gl-matrix';
 
-interface AssetReference {
-  name: string;
-  path: string;
-  type: 'image' | 'audio' | 'music' | 'model';
-}
+export class AssetManager extends ResourceManager {
+  private ac = new AudioContext();
 
-type AssetData = HTMLImageElement | HTMLAudioElement | Mesh;
-
-class Asset {
-  name: string;
-  path: string;
-  type: 'image' | 'audio' | 'music' | 'model';
-  data: HTMLImageElement | HTMLAudioElement | Mesh;
-}
-
-export class AssetManager {
-  private assets: Map<string, Asset>;
-  private pending: number = 0;
-  private onReadyCallback: () => void;
-  private onProgressCallback: (remain: number, total: number) => void;
-  private assetsToLoadCount: number = 0;
-
-  constructor() {
-    this.assets = new Map();
+  constructor(index: ResourceIndex) {
+    super(index);
   }
 
-  defineAssets(refs: AssetReference[]) {
-    for (let ref of refs) {
-      this.handleAsset(ref);
-    }
+  getImage(name: string): HTMLImageElement {
+    return this.image.get(name);
   }
 
-  handleAsset(ref: AssetReference) {
-    let rawAsset: AssetData;
-    const asset = new Asset();
-
-    if (ref.type === 'audio' || ref.type === 'music') {
-      rawAsset = new Audio();
-      if (ref.type === 'music') {
-        rawAsset.loop = true;
-      } else {
-        // load entire audio file so it's ready
-        rawAsset.preload = 'auto';
-      }
-      // TODO audio loading is async but we may want to preload some small sfx later?
-      rawAsset.addEventListener('load', this.onAssetLoaded.bind(this));
-      asset.data = rawAsset;
-    } else if (ref.type === 'image') {
-      rawAsset = new Image();
-      ++this.pending;
-      ++this.assetsToLoadCount;
-      rawAsset.addEventListener('load', this.onAssetLoaded.bind(this));
-      asset.data = rawAsset;
-    } else if (ref.type === 'model') {
-      fetch(ref.path).then(resp => resp.text()).then(text => loadObj(text)).then(m => {
-        asset.data = m;
-        this.onAssetLoaded();
-      });
-    }
-    asset.name = ref.name;
-    asset.path = ref.path;
-    asset.type = ref.type;
-    this.assets.set(ref.name, asset);
+  getAudio(name: string): AudioBuffer {
+    return this.audio.get(name);
   }
 
-  preload() {
-    for (let asset of this.assets.values()) {
-      // initiates a browser request to actually load the asset
-      if (asset.data instanceof HTMLImageElement || asset.data instanceof HTMLAudioElement) {
-        asset.data.src = asset.path;
-      }
-    }
-  }
-
-  onProgress(f: typeof AssetManager.prototype.onProgressCallback) {
-    this.onProgressCallback = f;
-  }
-
-  onReady(f: typeof AssetManager.prototype.onReadyCallback) {
-    this.onReadyCallback = f;
-  }
-
-  getImage(name: string) {
-    const asset = this.assets.get(name);
-    if (asset.type !== 'image') {
-      throw new Error('expected image');
-    }
-    return asset.data as HTMLImageElement;
-  }
-
-  getAudio(name: string) {
-    const asset = this.assets.get(name);
-    if (asset.type !== 'audio' && asset.type !== 'music') {
-      throw new Error('expected audio');
-    }
-    return asset.data as HTMLAudioElement;
-  }
-
-  private onAssetLoaded() {
-    --this.pending;
-    this.onProgressCallback(this.assetsToLoadCount - this.pending, this.assetsToLoadCount);
-    if (this.pending === 0) {
-      this.onReadyCallback();
-    }
+  getMusic(name: string): HTMLAudioElement {
+    return this.music.get(name);
   }
 
   tryPlayAudio(name: string) {
     const audio = this.getAudio(name);
-    try {
-      audio.currentTime = 0;
-      audio.play();
-    } catch {
 
-    }
+    const source = this.ac.createBufferSource();
+    source.buffer = audio;
+    source.connect(this.ac.destination);
+    source.start();
   }
 
-  getModel(name: string) {
-    const asset = this.assets.get(name);
-    if (asset.type !== 'model') {
-      throw new Error('expected model');
-    }
-    return asset.data as Mesh;
+  tryPlayAudio3D(name: string, soundX: number, soundY: number, soundZ: number) {
+    const audio = this.getAudio(name);
+
+    const soundPos = vec3.fromValues(soundX, soundY, soundZ);
+
+    const source = this.ac.createBufferSource();
+    const panner = this.ac.createPanner();
+    panner.positionX.value = soundPos[0];
+    panner.positionY.value = soundPos[1];
+    panner.positionZ.value = soundPos[2];
+    
+    panner.distanceModel = 'linear';
+
+    source.buffer = audio;
+
+    source.connect(panner);
+    panner.connect(this.ac.destination);
+    source.start();
+  }
+
+  updateListener(pos: vec3, forward: vec3) {
+    // these functions are deprecated but firefox has not implemented the more
+    // modern variant
+    this.ac.listener.setPosition(pos[0], pos[1], pos[2]);
+    this.ac.listener.setOrientation(
+      forward[0], forward[1], forward[2],
+      0, 1, 0
+    );
+    /*
+    this.ac.listener.positionX.value = pos[0];
+    this.ac.listener.positionY.value = pos[1];
+    this.ac.listener.positionZ.value = pos[2];
+    this.ac.listener.forwardX.value = forward[0];
+    this.ac.listener.forwardY.value = forward[1];
+    this.ac.listener.forwardZ.value = forward[2];
+    this.ac.listener.upX.value = 0;
+    this.ac.listener.upY.value = 1;
+    this.ac.listener.upZ.value = 0;
+    */
+  }
+
+  getModel(name: string): Mesh {
+    return this.model.get(name);
   }
 }

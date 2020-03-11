@@ -1,11 +1,44 @@
 export default [
+  
+  {
+    enableFog: true,
+    fogColor:  [0.4, 0.4, 0.4, 1.0],
+    fogDensity: 0.01,
+    floor: 'overgrown_dirt',
+    wall: 'overgrown_wall',
+    music: 'MUS_track0',
+    text:
+`
+WWWWWWWWWWWWWWWW
+W___________D__W
+W____D___W_____W
+W________D_____W
+W_T__W_______D_W
+W______B__D____W
+W___________W__W
+WP________T____W
+W______________W
+W_____W_____D__W
+W_T____________W
+W_______D______W
+W______________W
+W_____D_______EW
+WWWWWWWWWWWWWWWW
+
+`,
+    items: [
+      {type: 'sword', x: 3, y: 7},
+      {type: 'spellbook', x: 3, y: 8},
+    ]
+  },
+  
   {
     enableFog: true,
     fogColor:  [0.7, 0.7, 0.7, 1.0],
     fogDensity: 0.005,
     floor: 'overgrown_dirt',
     wall: 'overgrown_wall',
-    music: 'track0',
+    music: 'MUS_track0',
     text:
 `
 __##############
@@ -13,9 +46,10 @@ ____############
 _______#########
 _______#########
 P______________E
-_______#########
-_______#########
-____############
+_______WWW######
+_______W_______#
+____###W_T_____#
+__#####________#
 __##############
 `,
     items: [
@@ -29,7 +63,7 @@ __##############
     fogDensity: 0.05,
     floor: 'overgrown_dirt',
     wall: 'overgrown_wall',
-    music: 'track2',
+    music: 'MUS_track2',
     text:
 `
 ####__________#
@@ -47,7 +81,7 @@ ___#_###_###ED#
     fogDensity: 0.05,
     floor: 'overgrown_dirt',
     wall: 'overgrown_wall',
-    music: 'track3',
+    music: 'MUS_track3',
     text:
 `
 ##############
@@ -69,7 +103,7 @@ P____________#
     fogDensity: 0.05,
     floor: 'overgrown_dirt',
     wall: 'overgrown_wall',
-    music: 'track3',
+    music: 'MUS_track3',
     text:
 `
 ###D#D#D#D#D####
@@ -79,6 +113,5 @@ P_______D____#D#
 __#__________#D#
 ###D#D#D#D#D##E#
 `
-  }
-
+  },
 ];

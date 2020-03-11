@@ -32,13 +32,9 @@ class WhisperPlayer {
     this.am = am;
   }
 
-  playRandomWhisper() {
+  playRandomWhisper(soundX: number, soundY: number, soundZ: number) {
     const i = Math.floor(Math.random() * 3);
-    const a = this.am.getAudio(`whisper${i}`);
-    try {
-      a.play();
-    } catch {
-    }
+    this.am.tryPlayAudio3D(`whisper${i}`, soundX, soundY, soundZ);
   }
 }
 
@@ -195,6 +191,7 @@ export default class Game {
       return;
     }
     this.time += dt;
+    this.assetMan.updateListener(this.player.getWorldPos(), this.player.cam.getFront());
     this.player.beginUpdate();
 
     const old_px = this.player.getWorldX();
@@ -540,7 +537,8 @@ export default class Game {
             y * TILE_SIZE
           );
           death.onWake(() => {
-            this.whisperPlayer.playRandomWhisper();
+            const playerPos = this.player.getWorldPos();
+            this.whisperPlayer.playRandomWhisper(death.worldPos[0], death.worldPos[1], death.worldPos[2]);
           });
           this.enemies.push(death);
         }
@@ -569,7 +567,7 @@ export default class Game {
 
     if (this.level.music) {
       this.stopMusic();
-      this.music = this.assetMan.getAudio(this.level.music);
+      this.music = this.assetMan.getMusic(this.level.music);
       try {
         this.music.play();
       } catch {
@@ -649,7 +647,7 @@ export default class Game {
     }
 
     if (pickedName === 'sword') {
-      this.playMusic('track1', 5000);
+      this.playMusic('MUS_track1', 5000);
 
       const w = new Weapon(sword);
       w.on('activate', () => {
@@ -675,14 +673,14 @@ export default class Game {
       this.musicFadeTimer.on('expire', () => {
         this.stopMusic();
         this.music.volume = 1;
-        this.music = this.assetMan.getAudio(name);
+        this.music = this.assetMan.getMusic(name);
         try {
           this.music.play();
         } catch {}
         this.musicFadeTimer = null;
       });
     } else {
-      this.music = this.assetMan.getAudio(name);
+      this.music = this.assetMan.getMusic(name);
       try {
         this.music.play();
       } catch {}
