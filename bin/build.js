@@ -16,13 +16,16 @@ function rmdirRecursiveSync(d) {
   fs.rmdirSync(d);
 }
 
-function copyDirSync(d, dest) {
+function copyDirSync(d, dest, filter) {
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest);
   }
   for (const f of fs.readdirSync(d)) {
     const srcFilename = path.join(d, f);
     const dstFilename = path.join(dest, path.basename(srcFilename));
+    if (filter && !filter(srcFilename)) {
+      continue;
+    }
     const stat = fs.statSync(srcFilename);
     console.log('copy', srcFilename, dstFilename);
     if (stat.isDirectory()) {
@@ -60,17 +63,7 @@ console.log('Copying assets...');
 
 fs.mkdirSync('dist-stage1/assets');
 
-const files = fs.readdirSync('assets');
-for (let filename of files) {
-  const ext = path.extname(filename);
-  const src = `assets/${filename}`;
-  const dst = `dist-stage1/assets/${filename}`;
-
-  if (ext === '.png' || ext === '.ogg') {
-    console.log(`copy ${src} to ${dst}`);
-    fs.copyFileSync(src, dst);
-  }
-}
+copyDirSync('assets', 'dist-stage1/assets', (p) => p.match(/dr2/));
 
 const zip = child_process.spawnSync(
   '7z', ['a', 'RELEASE.zip', '*'], {
