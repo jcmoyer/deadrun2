@@ -1,13 +1,14 @@
-import { Camera } from './camera';
-import { vec2, vec3, mat4 } from 'gl-matrix';
+import { vec3 } from 'gl-matrix';
 import { clamp } from './math';
 import Weapon from './weapon';
 
 export class Player {
-  public cam: Camera = new Camera();
-  private pos: vec3;
+  public prevPos: vec3;
+  public pos: vec3;
   public prevEye: vec3;
   public prevLook: vec3;
+  public prevYaw = 0;
+  public prevPitch = 0;
   public yaw = 0;
   public pitch = 0;
   public dead = false;
@@ -16,69 +17,60 @@ export class Player {
   private currentWeapon: number = -1;
 
   constructor() {
+    this.prevPos = vec3.create();
     this.pos = vec3.create();
-    this.syncCamToMe();
-    this.prevEye = vec3.clone(this.cam.getEye());
-    this.prevLook = vec3.clone(this.cam.getLook());
     this.weapons = [];
   }
 
   beginUpdate() {
-    vec3.copy(this.prevEye, this.cam.getEye());
-    vec3.copy(this.prevLook, this.cam.getLook());
+    vec3.copy(this.prevPos, this.pos);
+    this.prevYaw = this.yaw;
+    this.prevPitch = this.pitch;
   }
 
-  private getInterpolatedCameraPosition(alpha: number): vec3 {
-    const interp = vec3.create();
-    vec3.lerp(interp, this.prevEye, this.cam.getEye(), alpha);
-    return interp;
+  getFront() {
+    const v = vec3.create();
+    v[0] = Math.cos(this.pitch) * Math.cos(this.yaw);
+    v[1] = Math.sin(this.pitch);
+    v[2] = Math.cos(this.pitch) * Math.sin(this.yaw);
+    return v;
   }
 
-  private getInterpolatedCameraLook(alpha: number): vec3 {
-    const interp = vec3.create();
-    vec3.lerp(interp, this.prevLook, this.cam.getLook(), alpha);
-    return interp;
-  }
-
-  getInterpolatedViewMatrix(alpha: number): mat4 {
-    const view = mat4.create();
-    return mat4.lookAt(
-      view,
-      this.getInterpolatedCameraPosition(alpha),
-      this.getInterpolatedCameraLook(alpha),
-      this.cam.getUp()
-    );
+  private getFrontWithoutPitch() {
+    const v = vec3.create();
+    v[0] = Math.cos(this.yaw);
+    v[1] = 0;
+    v[2] = Math.sin(this.yaw);
+    return v;
   }
 
   move(d: number) {
-    this.cam.moveXZ(d);
-    this.syncToCamPos();
+    const forceVec = this.getFrontWithoutPitch();
+    vec3.normalize(forceVec, forceVec);
+    vec3.mul(forceVec, forceVec, [d, d, d]);
+    vec3.add(
+      this.pos,
+      this.pos,
+      forceVec
+    );
   }
 
   strafe(d: number) {
-    this.cam.strafe(d);
-    this.syncToCamPos();
+    const forward = this.getFrontWithoutPitch();
+    const up = vec3.fromValues(0, 1, 0);
+    const right = vec3.cross(vec3.create(), forward, up);
+    vec3.normalize(right, right);
+    vec3.mul(right, right, [d, d, d]);
+    vec3.add(this.pos, this.pos, right);
   }
 
   addYaw(d: number) {
     this.yaw += d;
-    this.cam.yaw = this.yaw;
   }
 
   addPitch(d: number) {
     this.pitch += d;
     this.pitch = clamp(this.pitch, -Math.PI / 2 + 0.01, Math.PI / 2 - 0.01);
-    this.cam.pitch = this.pitch;
-  }
-
-  private syncToCamPos() {
-    this.pos[0] = this.cam.getEye()[0];
-    this.pos[1] = this.cam.getEye()[1];
-    this.pos[2] = this.cam.getEye()[2];
-  }
-
-  private syncCamToMe() {
-    this.cam.setEye(this.pos[0], 16, this.pos[2]);
   }
 
   getWorldPos() {
@@ -96,17 +88,16 @@ export class Player {
   setWorldPos(x: number, z: number) {
     this.pos[0] = x;
     this.pos[2] = z;
-    this.syncCamToMe();
   }
 
   resetYaw() {
+    this.prevYaw = 0;
     this.yaw = 0;
-    this.cam.yaw = this.yaw;
   }
 
   resetPitch() {
+    this.prevPitch = 0;
     this.pitch = 0;
-    this.cam.pitch = this.pitch;
   }
 
   get pickupRadius() {

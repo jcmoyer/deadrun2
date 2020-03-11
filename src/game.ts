@@ -122,6 +122,8 @@ export default class Game {
   private tileset: TileSet;
   private lightList: LightList = new LightList(16);
 
+  private camera: Camera;
+
   constructor(canvas: HTMLCanvasElement, am: AssetManager) {
     this.assetMan = am;
 
@@ -178,6 +180,8 @@ export default class Game {
     this.tileset.setMeshTexture('W', this.assetMan.getModel('postwall_m'), this.textureCache.getTexture('postwall_t'));
     this.tileset.setMeshTexture('B', this.assetMan.getModel('gravehouse'), this.textureCache.getTexture('postwall_t'));
     this.setLevel(new Level(leveldata[this.levelID]));
+
+    this.camera = new Camera();
   }
 
   update(dt: number) {
@@ -191,7 +195,7 @@ export default class Game {
       return;
     }
     this.time += dt;
-    this.assetMan.updateListener(this.player.getWorldPos(), this.player.cam.getFront());
+    this.assetMan.updateListener(this.player.getWorldPos(), this.camera.getFront());
     this.player.beginUpdate();
 
     const old_px = this.player.getWorldX();
@@ -324,7 +328,12 @@ export default class Game {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const playerView = this.player.getInterpolatedViewMatrix(alpha);
+    // TODO: specify player height elsewhere
+    const interpPos = vec3.lerp(vec3.create(), this.player.prevPos, this.player.pos, alpha);
+    this.camera.setEye(interpPos[0], interpPos[1] + 16, interpPos[2]);
+    this.camera.yaw = lerp(this.player.prevYaw, this.player.yaw, alpha);
+    this.camera.pitch = lerp(this.player.prevPitch, this.player.pitch, alpha);
+    const playerView = this.camera.getViewMatrix();
 
     this.skydomeRenderer.render(playerView, this.projMatrix,
       this.textureCache.getTexture('sky0'),
@@ -622,7 +631,7 @@ export default class Game {
     this.assetMan.tryPlayAudio('fireball_launch');
     const p = new Projectile(
       vec3.fromValues(this.player.getWorldX(), 16, this.player.getWorldZ()),
-      vec3.clone(this.player.cam.getFront()),
+      vec3.clone(this.player.getFront()),
       5);
     p.texture = this.textureCache.getTexture('fireball');
     this.projectiles.push(p);
@@ -689,7 +698,7 @@ export default class Game {
 
   doSword() {
     const pos = vec3.fromValues(this.player.getWorldX(), 16, this.player.getWorldZ());
-    const front = vec3.clone(this.player.cam.getFront());
+    const front = vec3.clone(this.player.getFront());
     vec3.normalize(front, front);
     vec3.scale(front, front, 8);
     const sword = vec3.add(pos, pos, front);
