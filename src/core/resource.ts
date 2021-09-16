@@ -72,7 +72,7 @@ export class ResourceManager {
       const resolveOne = () => {
         --remaining;
         if (remaining === 0) {
-          resolve();
+          resolve(null);
         }
       };
 
