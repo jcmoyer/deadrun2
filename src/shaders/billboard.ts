@@ -91,14 +91,12 @@ uniform highp float billboardAlpha;
 void main() {
   highp vec4 base_color = texture2D(deathTexture, f_texcoord);
 
-  if (base_color.a < 0.05)
-    discard;
+  highp vec4 with_flash = mix(base_color, vec4(1, 1, 1, 1), billboardFlash);
 
-  base_color = mix(base_color, vec4(1, 1, 1, 1), billboardFlash);
-
-  gl_FragColor = mix_fog(base_color);
+  gl_FragColor = mix_fog(with_flash);
+  gl_FragColor.rgb = mixLight(gl_FragColor.rgb, f_position.xyz);
+  gl_FragColor.a = base_color.a;
   gl_FragColor.a *= billboardAlpha;
-  gl_FragColor.xyz = mixLight(gl_FragColor.xyz, f_position.xyz);
 }
 
 `;

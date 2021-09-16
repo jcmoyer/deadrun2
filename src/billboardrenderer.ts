@@ -48,6 +48,9 @@ export default class BillboardRenderer {
     }
 
     const gl = this.gl;
+
+    gl.depthMask(false);
+
     this.shader.use();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.pointBuffer);
 
@@ -83,5 +86,7 @@ export default class BillboardRenderer {
       gl.uniform1f(this.shader.uBillboardFlash, bb.billboardFlash ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
+
+    gl.depthMask(true);
   }
 }
