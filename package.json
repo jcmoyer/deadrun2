@@ -14,7 +14,7 @@
     "ts-shader": "0.0.3",
     "typescript": "^3.8.3",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.12"
   },
   "dependencies": {
     "@types/gl-matrix": "^2.4.5",
