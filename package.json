@@ -1,20 +1,18 @@
 {
   "name": "deadrun2",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "watch": "webpack --watch",
-    "build": "webpack --config webpack.config.PROD.js && node bin/build.js",
+    "watch": "esbuild src/main.ts --watch --bundle --outfile=dist-stage0/ld44bundle.js",
+    "build": "esbuild src/main.ts --minify --bundle --outfile=dist-stage0/ld44bundle.js && node bin/build.js",
     "build-shaders": "node scripts/build-shaders.js"
   },
   "author": "jcmoyer",
   "devDependencies": {
-    "ts-loader": "^6.2.2",
+    "esbuild": "^0.14.21",
     "ts-shader": "0.0.3",
-    "typescript": "^3.8.3",
-    "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11"
+    "typescript": "^3.8.3"
   },
   "dependencies": {
     "@types/gl-matrix": "^2.4.5",

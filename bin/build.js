@@ -59,12 +59,13 @@ fs.writeFileSync('dist-stage1/index.html', html);
 console.log('Copying assets...');
 
 fs.mkdirSync('dist-stage1/assets');
+fs.mkdirSync('dist-stage1/assets/dr2');
 
-const files = fs.readdirSync('assets');
+const files = fs.readdirSync('assets/dr2');
 for (let filename of files) {
   const ext = path.extname(filename);
-  const src = `assets/${filename}`;
-  const dst = `dist-stage1/assets/${filename}`;
+  const src = `assets/dr2/${filename}`;
+  const dst = `dist-stage1/assets/dr2/${filename}`;
 
   if (ext === '.png' || ext === '.ogg') {
     console.log(`copy ${src} to ${dst}`);
