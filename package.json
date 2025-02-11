@@ -10,7 +10,7 @@
   },
   "author": "jcmoyer",
   "devDependencies": {
-    "esbuild": "^0.17.18",
+    "esbuild": "^0.25.0",
     "ts-shader": "0.0.3",
     "typescript": "^3.8.3"
   },
